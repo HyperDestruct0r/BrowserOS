@@ -2526,6 +2526,111 @@ try {
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
+
+/** Format remaining time until an ISO expiry timestamp. */
+function formatExpiryCountdown(iso) {
+  if (iso == null || iso === "") return null;
+  var end;
+  try {
+    end = new Date(iso).getTime();
+  } catch (e) {
+    return null;
+  }
+  if (!end || isNaN(end)) return null;
+  var ms = end - Date.now();
+  if (ms <= 0) return { expired: true, text: "Expired", ms: 0, end: end };
+  var sec = Math.floor(ms / 1000);
+  var d = Math.floor(sec / 86400);
+  var h = Math.floor((sec % 86400) / 3600);
+  var m = Math.floor((sec % 3600) / 60);
+  var s = sec % 60;
+  var textStr;
+  if (d > 0) textStr = d + "d " + h + "h " + m + "m";
+  else if (h > 0) textStr = h + "h " + m + "m " + s + "s";
+  else if (m > 0) textStr = m + "m " + s + "s";
+  else textStr = s + "s";
+  return { expired: false, text: textStr, ms: ms, end: end };
+}
+
+function AccessExpiryBanner(props) {
+  props = props || {};
+  var accessExpiresAt = props.accessExpiresAt;
+  var nitroExpiresAt = props.nitroExpiresAt;
+  var compact = props.compact;
+  var tickState = useState(0);
+  var setTick = tickState[1];
+  useEffect(
+    function () {
+      if (!accessExpiresAt && !nitroExpiresAt) return undefined;
+      var id = setInterval(function () {
+        setTick(function (t) {
+          return t + 1;
+        });
+      }, 1000);
+      return function () {
+        clearInterval(id);
+      };
+    },
+    [accessExpiresAt, nitroExpiresAt]
+  );
+
+  var access = formatExpiryCountdown(accessExpiresAt);
+  var nitro = formatExpiryCountdown(nitroExpiresAt);
+  if (!access && !nitro) return null;
+
+  var box = {
+    marginTop: compact ? 8 : 0,
+    padding: compact ? "8px 10px" : "12px 14px",
+    borderRadius: 10,
+    border: "1px solid rgba(251, 191, 36, 0.35)",
+    background: "rgba(245, 158, 11, 0.1)",
+    fontSize: compact ? 12 : 13,
+    lineHeight: 1.45
+  };
+
+  return (
+    <div style={box}>
+      <div style={{ fontWeight: 800, color: "#fbbf24", marginBottom: 4 }}>
+        ⏱️ Access timers
+      </div>
+      {access ? (
+        <div style={{ color: access.expired ? "#f87171" : "var(--text)" }}>
+          BrowserOS access:{" "}
+          <strong>
+            {access.expired ? "Expired" : access.text + " remaining"}
+          </strong>
+          {!access.expired && accessExpiresAt ? (
+            <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+              {" "}
+              · ends {new Date(accessExpiresAt).toLocaleString()}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+      {nitro ? (
+        <div
+          style={{
+            color: nitro.expired ? "#f87171" : "var(--text)",
+            marginTop: access ? 4 : 0
+          }}
+        >
+          Nitro / Turbo:{" "}
+          <strong>
+            {nitro.expired ? "Expired" : nitro.text + " remaining"}
+          </strong>
+          {!nitro.expired && nitroExpiresAt ? (
+            <span style={{ color: "var(--text-muted)", fontSize: 11 }}>
+              {" "}
+              · ends {new Date(nitroExpiresAt).toLocaleString()}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+
 /* ─── BOUNCY BALL ─── */
 function BouncyBall(){
   const wrapRef = useRef(null);
@@ -7718,34 +7823,46 @@ function Settings() {
       <h2 style={{ margin: 0 }}>Settings</h2>
 
       {(() => {
-        const p = window.__browserOSProfile || {};
-        const ent = typeof getServerEntitlements === "function" ? getServerEntitlements() : null;
-        const accessAt =
-          (ent && ent.access_expires_at) || p.access_expires_at || null;
-        const nitroAt =
-          (ent && ent.nitro_expires_at) || p.nitro_expires_at || null;
-        if (
-          typeof isPrimaryOwnerEmail === "function" &&
-          isPrimaryOwnerEmail(p.email || (ent && ent.email))
-        ) {
-          return (
-            <div style={{ ...cardStyle, borderColor: "rgba(250,204,21,0.35)" }}>
-              <div style={{ fontWeight: 800, color: "#facc15" }}>👑 Owner account</div>
-              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                Your access does not expire.
+        try {
+          const p = window.__browserOSProfile || {};
+          const ent =
+            typeof getServerEntitlements === "function"
+              ? getServerEntitlements()
+              : null;
+          const accessAt =
+            (ent && ent.access_expires_at) || p.access_expires_at || null;
+          const nitroAt =
+            (ent && ent.nitro_expires_at) || p.nitro_expires_at || null;
+          const em = p.email || (ent && ent.email) || "";
+          if (
+            typeof isPrimaryOwnerEmail === "function" &&
+            isPrimaryOwnerEmail(em)
+          ) {
+            return (
+              <div style={Object.assign({}, cardStyle, { borderColor: "rgba(250,204,21,0.35)" })}>
+                <div style={{ fontWeight: 800, color: "#facc15" }}>
+                  👑 Owner account
+                </div>
+                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                  Your access does not expire.
+                </div>
               </div>
+            );
+          }
+          if (!accessAt && !nitroAt) return null;
+          if (typeof AccessExpiryBanner !== "function") return null;
+          return (
+            <div style={cardStyle}>
+              <AccessExpiryBanner
+                accessExpiresAt={accessAt}
+                nitroExpiresAt={nitroAt}
+              />
             </div>
           );
+        } catch (err) {
+          console.warn("settings expiry banner", err);
+          return null;
         }
-        if (!accessAt && !nitroAt) return null;
-        return (
-          <div style={cardStyle}>
-            <AccessExpiryBanner
-              accessExpiresAt={accessAt}
-              nitroExpiresAt={nitroAt}
-            />
-          </div>
-        );
       })()}
 
       <div style={cardStyle}>
@@ -15448,7 +15565,8 @@ function ChatApp({ openApp }) {
                   </div>
                 )}
                 {isSelfProfile &&
-                  (profileCard.accessExpiresAt || profileCard.nitroExpiresAt) && (
+                  (profileCard.accessExpiresAt || profileCard.nitroExpiresAt) &&
+                  typeof AccessExpiryBanner === "function" && (
                   <AccessExpiryBanner
                     compact
                     accessExpiresAt={profileCard.accessExpiresAt}
