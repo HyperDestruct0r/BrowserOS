@@ -7717,6 +7717,37 @@ function Settings() {
       {/* HEADER */}
       <h2 style={{ margin: 0 }}>Settings</h2>
 
+      {(() => {
+        const p = window.__browserOSProfile || {};
+        const ent = typeof getServerEntitlements === "function" ? getServerEntitlements() : null;
+        const accessAt =
+          (ent && ent.access_expires_at) || p.access_expires_at || null;
+        const nitroAt =
+          (ent && ent.nitro_expires_at) || p.nitro_expires_at || null;
+        if (
+          typeof isPrimaryOwnerEmail === "function" &&
+          isPrimaryOwnerEmail(p.email || (ent && ent.email))
+        ) {
+          return (
+            <div style={{ ...cardStyle, borderColor: "rgba(250,204,21,0.35)" }}>
+              <div style={{ fontWeight: 800, color: "#facc15" }}>👑 Owner account</div>
+              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+                Your access does not expire.
+              </div>
+            </div>
+          );
+        }
+        if (!accessAt && !nitroAt) return null;
+        return (
+          <div style={cardStyle}>
+            <AccessExpiryBanner
+              accessExpiresAt={accessAt}
+              nitroExpiresAt={nitroAt}
+            />
+          </div>
+        );
+      })()}
+
       <div style={cardStyle}>
 
         {/* THEME */}
@@ -11094,6 +11125,12 @@ async function refreshServerEntitlements(client) {
       window.__browserOSProfile.is_dev = !!ent.is_dev;
       window.__browserOSProfile.activated = !!ent.activated;
       window.__browserOSProfile.status = ent.status || window.__browserOSProfile.status;
+      if (ent.access_expires_at !== undefined) {
+        window.__browserOSProfile.access_expires_at = ent.access_expires_at;
+      }
+      if (ent.nitro_expires_at !== undefined) {
+        window.__browserOSProfile.nitro_expires_at = ent.nitro_expires_at;
+      }
       window.__browserOSProfile._canUseOs = !!ent.can_use_os;
       window.__browserOSProfile._needsActivation = !!ent.needs_activation;
       window.__browserOSProfile._needsApproval = !!ent.needs_approval;
@@ -11442,6 +11479,40 @@ function chatAuthorRoleColor(message, adminEmailSet, devEmailSet, nitroEmailSet)
   return "var(--accent)";
 }
 
+
+/** Personal labels (only visible to the current account). */
+function privateLabelStorageKey(ownerEmail) {
+  return "browserOS_private_labels_v1:" + String(ownerEmail || "").toLowerCase();
+}
+
+function loadLocalPrivateLabels(ownerEmail) {
+  try {
+    const raw = localStorage.getItem(privateLabelStorageKey(ownerEmail));
+    const obj = raw ? JSON.parse(raw) : {};
+    return obj && typeof obj === "object" ? obj : {};
+  } catch (_) {
+    return {};
+  }
+}
+
+function saveLocalPrivateLabel(ownerEmail, targetEmail, label) {
+  const owner = String(ownerEmail || "").toLowerCase();
+  const target = String(targetEmail || "").toLowerCase();
+  const map = loadLocalPrivateLabels(owner);
+  const lab = String(label || "").trim().slice(0, 64);
+  if (!lab) delete map[target];
+  else map[target] = lab;
+  try {
+    localStorage.setItem(privateLabelStorageKey(owner), JSON.stringify(map));
+  } catch (_) {}
+  return lab;
+}
+
+function getLocalPrivateLabel(ownerEmail, targetEmail) {
+  const map = loadLocalPrivateLabels(ownerEmail);
+  return map[String(targetEmail || "").toLowerCase()] || "";
+}
+
 function dmChannelId(emailA, emailB) {
   const a = String(emailA || "").toLowerCase().trim();
   const b = String(emailB || "").toLowerCase().trim();
@@ -11646,6 +11717,8 @@ function ChatApp({ openApp }) {
   const [chatDropHover, setChatDropHover] = useState(false);
   const chatFileInputRef = useRef(null);
   const [profileCard, setProfileCard] = useState(null);
+  const [profileLabelDraft, setProfileLabelDraft] = useState("");
+  const [profileLabelBusy, setProfileLabelBusy] = useState(false);
   const [reactions, setReactions] = useState({}); // messageId -> [{emoji, count, mine}]
   const [memberList, setMemberList] = useState([]); // profiles
   const [onlineSet, setOnlineSet] = useState(() => new Set());
@@ -12107,12 +12180,22 @@ function ChatApp({ openApp }) {
       else if (on) live = "online";
       else live = "offline";
     } catch (_) {}
+    const localLab = getLocalPrivateLabel(userEmail, em);
+    setProfileLabelDraft(localLab);
+    const selfP = window.__browserOSProfile || {};
+    const isSelfOpen =
+      String(userEmail || "").toLowerCase() === em;
     setProfileCard({
       email: em,
       displayName: cachedName,
       avatarUrl: cachedAvatar,
       isAdmin: adminEmails.has(em),
       presenceStatus: live,
+      privateLabel: localLab,
+      accessExpiresAt: isSelfOpen
+        ? selfP.access_expires_at || null
+        : null,
+      nitroExpiresAt: isSelfOpen ? selfP.nitro_expires_at || null : null,
       loading: true
     });
     const client = getSupabaseClient();
@@ -12123,10 +12206,21 @@ function ChatApp({ openApp }) {
     try {
       const { data } = await client
         .from("profiles")
-        .select("email, display_name, avatar_url, is_admin, is_dev, is_nitro, is_turbo, tier, turbo_tagline, turbo_icon, badge_display, name_animation, status, bio, pronouns, custom_status, avatar_decoration, card_decoration, member_card_style, banner_effect, avatar_frame, custom_banner_url")
+        .select("email, display_name, avatar_url, is_admin, is_dev, is_nitro, is_turbo, tier, turbo_tagline, turbo_icon, badge_display, name_animation, status, bio, pronouns, custom_status, avatar_decoration, card_decoration, member_card_style, banner_effect, avatar_frame, custom_banner_url, access_expires_at, nitro_expires_at")
         .ilike("email", em)
         .maybeSingle();
       if (data) {
+        let privateLabel = localLab;
+        try {
+          const { data: labData } = await client.rpc("get_private_label", {
+            p_target_email: em
+          });
+          if (typeof labData === "string" && labData) {
+            privateLabel = labData;
+            saveLocalPrivateLabel(userEmail, em, labData);
+          }
+        } catch (_) {}
+        setProfileLabelDraft(privateLabel || "");
         setProfileCard({
           email: String(data.email || em).toLowerCase(),
           displayName: data.display_name || cachedName || "",
@@ -12146,6 +12240,9 @@ function ChatApp({ openApp }) {
           pronouns: data.pronouns || "",
           customStatus: data.custom_status || "",
           presenceStatus: live,
+          privateLabel: privateLabel || "",
+          accessExpiresAt: data.access_expires_at || null,
+          nitroExpiresAt: data.nitro_expires_at || null,
           avatarDecoration: (data.is_admin || data.is_dev || data.is_nitro)
             ? (data.avatar_frame || data.avatar_decoration || "none")
             : "none",
@@ -15316,6 +15413,19 @@ function ChatApp({ openApp }) {
                     No display name set
                   </div>
                 )}
+                {profileCard.privateLabel && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      marginTop: 6,
+                      color: "#a5b4fc",
+                      fontWeight: 600
+                    }}
+                    title="Your private label (only you can see this)"
+                  >
+                    {profileCard.privateLabel}
+                  </div>
+                )}
                 {profileCard.bio && (
                   <div
                     style={{
@@ -15337,6 +15447,29 @@ function ChatApp({ openApp }) {
                     Loading…
                   </div>
                 )}
+                {isSelfProfile &&
+                  (profileCard.accessExpiresAt || profileCard.nitroExpiresAt) && (
+                  <AccessExpiryBanner
+                    compact
+                    accessExpiresAt={profileCard.accessExpiresAt}
+                    nitroExpiresAt={profileCard.nitroExpiresAt}
+                  />
+                )}
+                {isSelfProfile &&
+                  !(profileCard.accessExpiresAt || profileCard.nitroExpiresAt) &&
+                  typeof isPrimaryOwnerEmail === "function" &&
+                  isPrimaryOwnerEmail(profileCard.email) && (
+                    <div
+                      style={{
+                        marginTop: 8,
+                        fontSize: 12,
+                        color: "#facc15",
+                        fontWeight: 700
+                      }}
+                    >
+                      👑 Owner · access does not expire
+                    </div>
+                  )}
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
                 {!isSelfProfile && (
@@ -15369,6 +15502,85 @@ function ChatApp({ openApp }) {
                   Close
                 </button>
               </div>
+              {!isSelfProfile && (
+                <div style={{ marginTop: 12 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--text-muted)",
+                      marginBottom: 4
+                    }}
+                  >
+                    Private label (only you can see this)
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      value={profileLabelDraft}
+                      onChange={e => setProfileLabelDraft(e.target.value)}
+                      placeholder="e.g. Classmate, Friend…"
+                      maxLength={64}
+                      style={{
+                        flex: 1,
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        border: "1px solid var(--border)",
+                        background: "var(--surface2)",
+                        color: "var(--text)",
+                        fontSize: 13
+                      }}
+                      onKeyDown={async e => {
+                        if (e.key !== "Enter") return;
+                        e.preventDefault();
+                        const client = getSupabaseClient();
+                        const lab = String(profileLabelDraft || "").trim().slice(0, 64);
+                        setProfileLabelBusy(true);
+                        saveLocalPrivateLabel(userEmail, profileCard.email, lab);
+                        try {
+                          if (client) {
+                            await client.rpc("set_private_label", {
+                              p_target_email: profileCard.email,
+                              p_label: lab
+                            });
+                          }
+                        } catch (_) {}
+                        setProfileCard(prev =>
+                          prev ? { ...prev, privateLabel: lab } : prev
+                        );
+                        setProfileLabelBusy(false);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="notes-btn"
+                      disabled={profileLabelBusy}
+                      style={{ fontWeight: 700 }}
+                      onClick={async () => {
+                        const client = getSupabaseClient();
+                        const lab = String(profileLabelDraft || "").trim().slice(0, 64);
+                        setProfileLabelBusy(true);
+                        saveLocalPrivateLabel(userEmail, profileCard.email, lab);
+                        try {
+                          if (client) {
+                            const { error } = await client.rpc("set_private_label", {
+                              p_target_email: profileCard.email,
+                              p_label: lab
+                            });
+                            if (error) setError(error.message || "Could not save label.");
+                          }
+                        } catch (err) {
+                          setError((err && err.message) || "Could not save label.");
+                        }
+                        setProfileCard(prev =>
+                          prev ? { ...prev, privateLabel: lab } : prev
+                        );
+                        setProfileLabelBusy(false);
+                      }}
+                    >
+                      {profileLabelBusy ? "…" : "Save"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
