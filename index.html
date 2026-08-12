@@ -2191,6 +2191,63 @@ html.theme-matrix body::after{
   padding-left:8px;border-radius:0 8px 8px 0;
 }
 
+.chat-channel-item{
+  display:block !important;
+  width:100% !important;
+  box-sizing:border-box;
+  text-align:left;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--text);
+  cursor:pointer;
+  font-weight:700;
+  font-size:13px;
+  margin:1px 0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.chat-channel-item.active{
+  border-color:var(--accent);
+  background:rgba(110,231,183,0.12);
+}
+.chat-channel-item.voice-active{
+  border-color:var(--accent);
+  background:rgba(34,197,94,0.12);
+}
+.dm-overlay-backdrop{
+  position:absolute;
+  inset:0;
+  z-index:40;
+  background:rgba(2,6,23,0.72);
+  display:flex;
+  align-items:stretch;
+  justify-content:center;
+  padding:12px;
+}
+.dm-overlay-panel{
+  width:min(440px,100%);
+  max-height:100%;
+  overflow:auto;
+  background:var(--chrome-bg,var(--surface));
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 20px 50px rgba(0,0,0,0.45);
+  display:flex;
+  flex-direction:column;
+}
+.dm-peer-card{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  margin-bottom:8px;
+}
 .chat-left-sidebar{
   display:flex;
   flex-direction:column;
@@ -2199,7 +2256,14 @@ html.theme-matrix body::after{
   overflow:hidden;
   flex-shrink:0;
 }
+.sidebar-scroll > button,
+.sidebar-scroll > div > button{
+  display:block;
+  width:100%;
+  box-sizing:border-box;
+}
 .sidebar-scroll{
+
   flex:1 1 auto;
   min-height:0;
   overflow-y:auto;
@@ -11042,6 +11106,150 @@ async function refreshServerEntitlements(client) {
 }
 
 /** Server says user may enter the desktop (not client-editable). */
+
+/** Detect client privilege spoofing vs server gate; report + hard lock. */
+window.__browserOSTamperReported = window.__browserOSTamperReported || false;
+
+async function reportClientTamper(reason, detail) {
+  if (window.__browserOSTamperReported) return true;
+  const client = typeof getSupabaseClient === "function" ? getSupabaseClient() : null;
+  if (!client) return false;
+  try {
+    const { data, error } = await client.rpc("report_client_tamper", {
+      p_reason: reason || "client_privilege_spoof",
+      p_detail: detail || {}
+    });
+    if (error) {
+      console.warn("tamper report failed", error);
+      return false;
+    }
+    if (data && data.skipped) return false;
+    window.__browserOSTamperReported = true;
+    try {
+      window.dispatchEvent(
+        new CustomEvent("browseros-tamper-ban", {
+          detail: { reason: reason, data: data }
+        })
+      );
+    } catch (_) {}
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function collectClientPrivilegeClaims() {
+  const p = window.__browserOSProfile || {};
+  return {
+    is_admin: !!p.is_admin,
+    is_dev: !!p.is_dev,
+    is_nitro: !!p.is_nitro,
+    is_turbo: !!p.is_turbo,
+    activated: !!p.activated,
+    status: p.status || null,
+    tier: p.tier || 0,
+    unlocked_flag: !!window.__browserOSUnlockedHint
+  };
+}
+
+/**
+ * Compare local claims to server entitlements.
+ * Returns { tamper, reasons[] } when local elevates above server.
+ */
+function detectPrivilegeTamper(ent) {
+  if (!ent || ent.ok === false) return { tamper: false, reasons: [] };
+  // Owner never trips automod from this check
+  try {
+    if (typeof isPrimaryOwnerClient === "function" && isPrimaryOwnerClient()) {
+      return { tamper: false, reasons: [] };
+    }
+  } catch (_) {}
+
+  const local = collectClientPrivilegeClaims();
+  const reasons = [];
+
+  if (local.is_admin && !ent.is_admin && !ent.is_staff) {
+    reasons.push("spoofed_is_admin");
+  }
+  if (local.is_dev && !ent.is_dev && !ent.is_staff) {
+    reasons.push("spoofed_is_dev");
+  }
+  if ((local.is_nitro || local.tier >= 1) && !(ent.is_nitro || ent.tier >= 1)) {
+    reasons.push("spoofed_nitro");
+  }
+  if ((local.is_turbo || local.tier >= 2) && !(ent.is_turbo || ent.tier >= 2)) {
+    reasons.push("spoofed_turbo");
+  }
+  if (local.activated && !ent.activated && !ent.is_staff) {
+    reasons.push("spoofed_activated");
+  }
+  if (local.status === "approved" && ent.status && ent.status !== "approved" && !ent.approved) {
+    reasons.push("spoofed_approved_status");
+  }
+  // Desktop forced open while server denies
+  if (
+    window.__browserOSUnlockedHint &&
+    ent.can_use_os === false &&
+    !ent.is_staff
+  ) {
+    reasons.push("forced_unlock_without_gate");
+  }
+
+  return { tamper: reasons.length > 0, reasons: reasons, local: local };
+}
+
+async function runIntegrityCheck(client) {
+  try {
+    const ent =
+      (await refreshServerEntitlements(client)) || getServerEntitlements();
+    if (!ent) return { ok: true };
+    const hit = detectPrivilegeTamper(ent);
+    if (hit.tamper) {
+      await reportClientTamper(hit.reasons.join(","), {
+        reasons: hit.reasons,
+        local: hit.local,
+        server: {
+          tier: ent.tier,
+          is_admin: ent.is_admin,
+          is_dev: ent.is_dev,
+          is_nitro: ent.is_nitro,
+          is_turbo: ent.is_turbo,
+          activated: ent.activated,
+          status: ent.status,
+          can_use_os: ent.can_use_os
+        },
+        ua: typeof navigator !== "undefined" ? navigator.userAgent : "",
+        at: new Date().toISOString()
+      });
+      return { ok: false, tamper: true, reasons: hit.reasons, ent: ent };
+    }
+    return { ok: true, ent: ent };
+  } catch (_) {
+    return { ok: true };
+  }
+}
+
+function startBrowserOSIntegrityMonitor() {
+  if (window.__browserOSIntegrityStarted) return;
+  window.__browserOSIntegrityStarted = true;
+  const tick = () => {
+    try {
+      runIntegrityCheck();
+    } catch (_) {}
+  };
+  setInterval(tick, 20000);
+  setTimeout(tick, 4000);
+  // Profile object mutation hint
+  try {
+    const p = window.__browserOSProfile;
+    if (p && !p.__tamperProxied) {
+      // lightweight: re-check on focus
+    }
+  } catch (_) {}
+  window.addEventListener("focus", tick);
+}
+
+
 function serverAllowsOsAccess() {
   const ent = getServerEntitlements();
   if (ent && typeof ent.can_use_os === "boolean") return !!ent.can_use_os;
@@ -11493,6 +11701,8 @@ function ChatApp({ openApp }) {
   const [newChannelAccess, setNewChannelAccess] = useState("open");
   const [editChannel, setEditChannel] = useState(null); // channel object being edited
   const [sidebarProfileOpen, setSidebarProfileOpen] = useState(false);
+  const [dmPanelOpen, setDmPanelOpen] = useState(false);
+  const [dmEmailInput, setDmEmailInput] = useState("");
   const [dmList, setDmList] = useState([]); // [{ channel, peer }]
   const [gdmList, setGdmList] = useState(function () {
     return typeof loadGdmStore === "function" ? loadGdmStore() : [];
@@ -11823,6 +12033,50 @@ function ChatApp({ openApp }) {
       } else {
         setNitroClaimInfo("Could not send request: " + msg);
       }
+    }
+  };
+
+  const toggleBlockPeer = async (peerEmail) => {
+    const client = getSupabaseClient();
+    const me = String(userEmail || "").toLowerCase();
+    const target = String(peerEmail || "").toLowerCase().replace(/^@/, "").trim();
+    if (!client || !me || !target || !target.includes("@")) {
+      setError("Enter a valid email to block/unblock.");
+      return;
+    }
+    if (target === me) return;
+    const isBlocked = blockedSet.has(target);
+    try {
+      if (isBlocked) {
+        await client
+          .from("chat_blocks")
+          .delete()
+          .ilike("blocker_email", me)
+          .ilike("blocked_email", target);
+        setBlockedSet(prev => {
+          const n = new Set(prev);
+          n.delete(target);
+          return n;
+        });
+        if (typeof browserOSNotify === "function") {
+          browserOSNotify({ title: "Unblocked", body: target });
+        }
+      } else {
+        const { error: bErr } = await client.from("chat_blocks").upsert({
+          blocker_email: me,
+          blocked_email: target
+        });
+        if (bErr) {
+          setError(bErr.message || "Block failed.");
+          return;
+        }
+        setBlockedSet(prev => new Set([...prev, target]));
+        if (typeof browserOSNotify === "function") {
+          browserOSNotify({ title: "Blocked", body: target });
+        }
+      }
+    } catch (err) {
+      setError((err && err.message) || "Block update failed.");
     }
   };
 
@@ -15148,6 +15402,286 @@ function ChatApp({ openApp }) {
           </div>
         </div>
       )}
+
+      {dmPanelOpen && (
+        <div
+          className="dm-overlay-backdrop"
+          onClick={() => setDmPanelOpen(false)}
+        >
+          <div
+            className="dm-overlay-panel"
+            onClick={e => e.stopPropagation()}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "12px 14px",
+                borderBottom: "1px solid var(--border)",
+                flexShrink: 0
+              }}
+            >
+              <strong>Direct Messages</strong>
+              <button
+                type="button"
+                className="notes-btn"
+                onClick={() => setDmPanelOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div style={{ padding: 14, overflow: "auto", flex: 1 }}>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>
+                Message someone by email
+              </div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                <input
+                  value={dmEmailInput}
+                  onChange={e => setDmEmailInput(e.target.value)}
+                  placeholder="user@email.com"
+                  style={{
+                    flex: 1,
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    border: "1px solid var(--border)",
+                    background: "var(--surface2)",
+                    color: "var(--text)"
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      const em = String(dmEmailInput || "").trim().toLowerCase();
+                      if (em.includes("@")) {
+                        if (blockedSet.has(em)) {
+                          setError("You blocked this user. Unblock them first.");
+                          return;
+                        }
+                        openDm(em);
+                        setDmPanelOpen(false);
+                        setDmEmailInput("");
+                      }
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="notes-btn"
+                  style={{ fontWeight: 800 }}
+                  onClick={() => {
+                    const em = String(dmEmailInput || "").trim().toLowerCase();
+                    if (!em.includes("@")) {
+                      setError("Enter a valid email.");
+                      return;
+                    }
+                    if (blockedSet.has(em)) {
+                      setError("You blocked this user. Unblock them first.");
+                      return;
+                    }
+                    openDm(em);
+                    setDmPanelOpen(false);
+                    setDmEmailInput("");
+                  }}
+                >
+                  DM
+                </button>
+              </div>
+
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: "var(--text-muted)",
+                  letterSpacing: "0.06em",
+                  marginBottom: 8
+                }}
+              >
+                YOUR CONVERSATIONS
+              </div>
+              {!(dmList && dmList.length) && (
+                <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>
+                  No DMs yet. Enter an email above or open a profile card.
+                </div>
+              )}
+              {(dmList || []).map(d => {
+                const peer = d.peer || dmPeerFromChannel(d.channel, userEmail) || "";
+                const em = String(peer).toLowerCase();
+                const isBlocked = blockedSet.has(em);
+                const av = avatarMap[em];
+                const name =
+                  nickMap[em] ||
+                  (memberList.find(
+                    m => String(m.email || "").toLowerCase() === em
+                  ) || {}
+                  ).display_name ||
+                  peer;
+                return (
+                  <div key={d.channel} className="dm-peer-card">
+                    <span
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        overflow: "hidden",
+                        flexShrink: 0,
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "var(--surface)",
+                        border: "1px solid var(--border)"
+                      }}
+                    >
+                      {av ? (
+                        <img
+                          src={av}
+                          alt=""
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        "👤"
+                      )}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          fontSize: 13,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap"
+                        }}
+                      >
+                        {name}
+                        {dmUnread[d.channel] > 0 && (
+                          <span
+                            style={{
+                              marginLeft: 6,
+                              background: "#ef4444",
+                              color: "#fff",
+                              borderRadius: 999,
+                              fontSize: 10,
+                              padding: "1px 6px"
+                            }}
+                          >
+                            {dmUnread[d.channel]}
+                          </span>
+                        )}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: "var(--text-muted)",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis"
+                        }}
+                      >
+                        {peer}
+                        {isBlocked ? " · blocked" : ""}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      className="notes-btn"
+                      style={{ fontSize: 11, fontWeight: 700 }}
+                      onClick={() => {
+                        setChannel(d.channel);
+                        setDmPanelOpen(false);
+                      }}
+                    >
+                      Open
+                    </button>
+                    <button
+                      type="button"
+                      className="notes-btn"
+                      style={{
+                        fontSize: 11,
+                        color: isBlocked ? "var(--accent)" : "#f87171"
+                      }}
+                      onClick={() => toggleBlockPeer(peer)}
+                    >
+                      {isBlocked ? "Unblock" : "Block"}
+                    </button>
+                  </div>
+                );
+              })}
+
+              {(gdmList || []).filter(g => userInGdm(g, userEmail)).length > 0 && (
+                <>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: "var(--text-muted)",
+                      letterSpacing: "0.06em",
+                      margin: "16px 0 8px"
+                    }}
+                  >
+                    GROUP CHATS
+                  </div>
+                  {(gdmList || [])
+                    .filter(g => userInGdm(g, userEmail))
+                    .map(g => (
+                      <div key={g.channel || g.id} className="dm-peer-card">
+                        <span style={{ fontSize: 22 }}>{g.icon || "👥"}</span>
+                        <div style={{ flex: 1, minWidth: 0, fontWeight: 700 }}>
+                          {g.name || "Group"}
+                        </div>
+                        <button
+                          type="button"
+                          className="notes-btn"
+                          style={{ fontSize: 11 }}
+                          onClick={() => {
+                            setChannel(g.channel || "gdm:" + g.id);
+                            setDmPanelOpen(false);
+                          }}
+                        >
+                          Open
+                        </button>
+                        <button
+                          type="button"
+                          className="notes-btn"
+                          style={{ fontSize: 11 }}
+                          onClick={() => openGdmSettings(g.id)}
+                        >
+                          ⚙️
+                        </button>
+                      </div>
+                    ))}
+                </>
+              )}
+
+              {[...blockedSet].length > 0 && (
+                <>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 800,
+                      color: "var(--text-muted)",
+                      letterSpacing: "0.06em",
+                      margin: "16px 0 8px"
+                    }}
+                  >
+                    BLOCKED
+                  </div>
+                  {[...blockedSet].map(em => (
+                    <div key={em} className="dm-peer-card">
+                      <div style={{ flex: 1, fontSize: 12 }}>{em}</div>
+                      <button
+                        type="button"
+                        className="notes-btn"
+                        style={{ fontSize: 11 }}
+                        onClick={() => toggleBlockPeer(em)}
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <div
         className="chat-left-sidebar"
@@ -15465,147 +15999,6 @@ function ChatApp({ openApp }) {
           </div>
         )}
 
-        <button type="button" className="chat-cat-head" onClick={() => toggleCat("dms")}>
-          {collapsedCats.dms ? "▶" : "▼"} DIRECT MESSAGES
-        </button>
-        {!collapsedCats.dms && (
-          <button
-            type="button"
-            className="notes-btn"
-            style={{ margin: "4px 0 8px", width: "100%", fontSize: 12, fontWeight: 700 }}
-            onClick={openCreateGdm}
-          >
-            + New Group Chat
-          </button>
-        )}
-        {!collapsedCats.dms &&
-          (gdmList || [])
-            .filter(g => userInGdm(g, userEmail))
-            .map(g => (
-              <div
-                key={g.channel || g.id}
-                style={{ display: "flex", gap: 4, alignItems: "center", marginBottom: 2 }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setChannel(g.channel || "gdm:" + g.id)}
-                  style={{
-                    flex: 1,
-                    textAlign: "left",
-                    padding: "8px 10px",
-                    borderRadius: 8,
-                    border:
-                      "1px solid " +
-                      (channel === (g.channel || "gdm:" + g.id)
-                        ? "var(--accent)"
-                        : "transparent"),
-                    background:
-                      channel === (g.channel || "gdm:" + g.id)
-                        ? "rgba(110,231,183,0.12)"
-                        : "transparent",
-                    color: "var(--text)",
-                    cursor: "pointer",
-                    fontSize: 12,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap"
-                  }}
-                >
-                  {g.icon || "👥"} {g.name || "Group"}
-                </button>
-                <button
-                  type="button"
-                  className="notes-btn"
-                  style={{ fontSize: 11, padding: "4px 6px" }}
-                  onClick={() => openGdmSettings(g.id)}
-                  title="Group settings"
-                >
-                  ⚙️
-                </button>
-              </div>
-            ))}
-        {!collapsedCats.dms && !dmList.length && (
-          <div style={{ fontSize: 11, color: "var(--text-muted)", padding: "4px 8px" }}>
-            Click a name in chat to DM
-          </div>
-        )}
-        {!collapsedCats.dms && dmList.map(d => (
-          <button
-            key={d.channel}
-            type="button"
-            onClick={() => setChannel(d.channel)}
-            style={{
-              textAlign: "left",
-              padding: "8px 10px",
-              borderRadius: 8,
-              border: "1px solid " + (channel === d.channel ? "var(--accent)" : "transparent"),
-              background: channel === d.channel ? "rgba(110,231,183,0.12)" : "transparent",
-              color: "var(--text)",
-              cursor: "pointer",
-              fontSize: 12,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap"
-            }}
-            title={d.peer}
-          >
-            @ {d.peer}
-            {dmUnread[d.channel] > 0 && (
-              <span
-                style={{
-                  marginLeft: 6,
-                  background: "#ef4444",
-                  color: "#fff",
-                  borderRadius: 999,
-                  fontSize: 10,
-                  fontWeight: 800,
-                  padding: "1px 6px"
-                }}
-              >
-                {dmUnread[d.channel]}
-              </span>
-            )}
-          </button>
-        ))}
-
-        {startDmOptions.length > 0 && !collapsedCats.dms && (
-          <>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 800,
-                color: "var(--text-muted)",
-                letterSpacing: "0.06em",
-                margin: "14px 0 6px"
-              }}
-            >
-              START DM
-            </div>
-            {startDmOptions.slice(0, 12).map(email => (
-              <button
-                key={email}
-                type="button"
-                onClick={() => openDm(email)}
-                style={{
-                  textAlign: "left",
-                  padding: "6px 10px",
-                  borderRadius: 8,
-                  border: "none",
-                  background: "transparent",
-                  color: "var(--text-muted)",
-                  cursor: "pointer",
-                  fontSize: 11,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
-                }}
-              >
-                + {email}
-              </button>
-            ))}
-          </>
-        )}
-
         <button type="button" className="chat-cat-head" onClick={() => toggleCat("voice")}>
           {collapsedCats.voice ? "▶" : "▼"} VOICE CHANNELS
         </button>
@@ -15758,6 +16151,43 @@ function ChatApp({ openApp }) {
               setNitroClaimInfo(false);
             }}
           >
+
+        {/* Voice is above DMs; DMs open as overlay */}
+        <button
+          type="button"
+          className="chat-channel-item"
+          style={{ marginTop: 10, fontWeight: 800 }}
+          onClick={() => setDmPanelOpen(true)}
+        >
+          ✉️ Direct Messages
+          {Object.values(dmUnread || {}).reduce((a, b) => a + (b || 0), 0) > 0 && (
+            <span
+              style={{
+                marginLeft: 8,
+                background: "#ef4444",
+                color: "#fff",
+                borderRadius: 999,
+                fontSize: 10,
+                fontWeight: 800,
+                padding: "1px 6px"
+              }}
+            >
+              {Object.values(dmUnread || {}).reduce((a, b) => a + (b || 0), 0)}
+            </span>
+          )}
+        </button>
+        <button
+          type="button"
+          className="notes-btn"
+          style={{ width: "100%", marginTop: 6, fontSize: 12, fontWeight: 700 }}
+          onClick={() => {
+            setDmPanelOpen(true);
+            openCreateGdm();
+          }}
+        >
+          + New Group Chat
+        </button>
+
             🚀 Get Nitro
           </button>
         )}
@@ -20873,20 +21303,57 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
 }
 
 function PendingApprovalScreen({ profile, onBack }) {
+  const rejected =
+    (profile && profile.status === "rejected") ||
+    (profile && profile._tamperBanned) ||
+    (typeof getServerEntitlements === "function" &&
+      getServerEntitlements() &&
+      getServerEntitlements().status === "rejected");
   return (
     <div className="auth-screen">
       <div className="auth-card">
         <div className="auth-logo">BrowserOS</div>
-        <div className="auth-sub">Access pending</div>
+        <div className="auth-sub">
+          {rejected ? "Access denied" : "Access pending"}
+        </div>
         <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55, marginBottom: 16 }}>
-          Your account
-          {profile && profile.email ? (
+          {rejected ? (
             <>
-              {" "}
-              (<strong style={{ color: "var(--text)" }}>{profile.email}</strong>)
+              Your application was rejected by an administrator.
+              {profile && profile.email ? (
+                <>
+                  {" "}
+                  (
+                  <strong style={{ color: "var(--text)" }}>{profile.email}</strong>
+                  )
+                </>
+              ) : null}
+              {profile && profile._tamperBanned ? (
+                <>
+                  <br />
+                  <br />
+                  <span style={{ color: "#f87171" }}>
+                    AutoMod detected client modification / privilege bypass attempts.
+                    Your account has been banned.
+                  </span>
+                </>
+              ) : null}
             </>
-          ) : null}{" "}
-          is waiting for administrator approval. You cannot use BrowserOS until you are approved.
+          ) : (
+            <>
+              Your account
+              {profile && profile.email ? (
+                <>
+                  {" "}
+                  (
+                  <strong style={{ color: "var(--text)" }}>{profile.email}</strong>
+                  )
+                </>
+              ) : null}{" "}
+              is waiting for administrator approval. You cannot use BrowserOS until you
+              are approved.
+            </>
+          )}
         </p>
         <button type="button" className="auth-btn" onClick={onBack}>
           Back to sign in
@@ -21643,6 +22110,7 @@ function AdminApprovalsApp() {
 
 function Root() {
   const [unlocked, setUnlocked] = useState(false);
+  const [rejectedProfile, setRejectedProfile] = useState(null);
   const [pendingProfile, setPendingProfile] = useState(null);
   const [revokeMsg, setRevokeMsg] = useState("");
   const [recoveryOpen, setRecoveryOpen] = useState(false);
@@ -21870,6 +22338,40 @@ function Root() {
     );
   }
 
+  useEffect(() => {
+    const onTamper = ev => {
+      try {
+        setUnlocked(false);
+        window.__browserOSUnlockedHint = false;
+        setNeedsActivation(null);
+        setPendingProfile(null);
+        setRejectedProfile({
+          status: "rejected",
+          _tamperBanned: true,
+          email:
+            (window.__browserOSProfile && window.__browserOSProfile.email) ||
+            ""
+        });
+        const client = getSupabaseClient();
+        if (client) client.auth.signOut({ scope: "local" }).catch(() => {});
+      } catch (_) {}
+    };
+    window.addEventListener("browseros-tamper-ban", onTamper);
+    return () => window.removeEventListener("browseros-tamper-ban", onTamper);
+  }, []);
+
+  if (rejectedProfile) {
+    return (
+      <PendingApprovalScreen
+        profile={rejectedProfile}
+        onBack={() => {
+          setRejectedProfile(null);
+          setUnlocked(false);
+        }}
+      />
+    );
+  }
+
   if (needsActivation) {
     return (
       <PlanGateScreen
@@ -21944,6 +22446,11 @@ function Root() {
             if (ent.can_use_os) {
               setNeedsActivation(null);
               setPendingProfile(null);
+              setRejectedProfile(null);
+              window.__browserOSUnlockedHint = true;
+              try {
+                startBrowserOSIntegrityMonitor();
+              } catch (_) {}
               setUnlocked(true);
               return;
             }
@@ -21960,6 +22467,11 @@ function Root() {
             return;
           }
           setNeedsActivation(null);
+          setRejectedProfile(null);
+          window.__browserOSUnlockedHint = true;
+          try {
+            startBrowserOSIntegrityMonitor();
+          } catch (_) {}
           setUnlocked(true);
         }}
         onPending={profile => setPendingProfile(profile || { status: "pending" })}
@@ -21967,6 +22479,10 @@ function Root() {
       />
     );
   }
+  try {
+    window.__browserOSUnlockedHint = true;
+    startBrowserOSIntegrityMonitor();
+  } catch (_) {}
   return <App />;
 }
 
