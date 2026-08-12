@@ -10980,8 +10980,11 @@ function isProfileActivated(profile) {
 }
 
 function isAccessExpired(profile) {
-
-  if (!profile || !profile.access_expires_at) return false;
+  if (!profile) return false;
+  if (typeof isPrimaryOwnerEmail === "function" && isPrimaryOwnerEmail(profile.email)) {
+    return false;
+  }
+  if (!profile.access_expires_at) return false;
   try {
     return new Date(profile.access_expires_at).getTime() < Date.now();
   } catch (_) {
@@ -20832,7 +20835,7 @@ function PlanGateScreen({ profile, onActivated, onSignOut }) {
                   className="auth-input"
                   value={coupon}
                   onChange={e => setCoupon(e.target.value)}
-                  placeholder="Coupon Code Here"
+                  placeholder="SCHOOL2026"
                   disabled={busy}
                 />
                 <button type="button" className="notes-btn" disabled={busy} onClick={validateCoupon}>
@@ -21477,6 +21480,11 @@ function AdminApprovalsApp() {
     const client = getSupabaseClient();
     const row = rows.find(r => r.user_id === userId);
     const email = row && row.email;
+    if (email && isPrimaryOwnerEmail(email)) {
+      setBusyId(null);
+      setError("Cannot modify the primary Owner account.");
+      return;
+    }
     const accessIso =
       status === "approved"
         ? computeExpiryIso(accessPreset || approveAccessPreset)
@@ -21549,6 +21557,10 @@ function AdminApprovalsApp() {
   const applyExpiry = async (userId, kind, preset) => {
     const row = rows.find(r => r.user_id === userId);
     if (!row || !row.email) return;
+    if (isPrimaryOwnerEmail(row.email)) {
+      setError("Cannot modify the primary Owner account.");
+      return;
+    }
     const iso = computeExpiryIso(preset);
     setBusyId(userId);
     const client = getSupabaseClient();
@@ -21914,26 +21926,65 @@ function AdminApprovalsApp() {
           <span style={{ flex: 1, minWidth: 160 }}>
             <div>
               {r.email}
-              {r.is_admin ? " · admin" : ""}
-              {r.is_dev ? " · dev" : ""}
-              {r.is_nitro ? " · nitro" : ""}
-              {" · "}
-              <span style={{ color: "var(--text-muted)" }}>{r.status}</span>
+              {isPrimaryOwnerEmail(r.email) ? (
+                <span
+                  style={{
+                    marginLeft: 8,
+                    fontWeight: 800,
+                    color: "#facc15",
+                    letterSpacing: "0.04em"
+                  }}
+                >
+                  · Owner
+                </span>
+              ) : (
+                <>
+                  {r.is_admin ? " · admin" : ""}
+                  {r.is_dev ? " · dev" : ""}
+                  {r.is_nitro ? " · nitro" : ""}
+                  {" · "}
+                  <span style={{ color: "var(--text-muted)" }}>{r.status}</span>
+                </>
+              )}
             </div>
             <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 2 }}>
-              Access:{" "}
-              {r.access_expires_at
-                ? new Date(r.access_expires_at).toLocaleString()
-                : "permanent"}
-              {" · Nitro: "}
-              {r.nitro_expires_at
-                ? new Date(r.nitro_expires_at).toLocaleString()
-                : r.is_nitro
-                ? "permanent"
-                : "—"}
+              {isPrimaryOwnerEmail(r.email) ? (
+                <span style={{ color: "#facc15", fontWeight: 700 }}>
+                  Access: Owner · Turbo: Owner
+                </span>
+              ) : (
+                <>
+                  Access:{" "}
+                  {r.access_expires_at
+                    ? new Date(r.access_expires_at).toLocaleString()
+                    : "permanent"}
+                  {" · Nitro: "}
+                  {r.nitro_expires_at
+                    ? new Date(r.nitro_expires_at).toLocaleString()
+                    : r.is_nitro
+                    ? "permanent"
+                    : "—"}
+                </>
+              )}
             </div>
           </span>
           <span style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+            {isPrimaryOwnerEmail(r.email) ? (
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 800,
+                  color: "#facc15",
+                  padding: "4px 10px",
+                  borderRadius: 8,
+                  border: "1px solid rgba(250,204,21,0.45)",
+                  background: "rgba(245,158,11,0.12)"
+                }}
+              >
+                Owner
+              </span>
+            ) : (
+              <>
             <select
               title="Access expiry"
               defaultValue=""
@@ -21970,7 +22021,9 @@ function AdminApprovalsApp() {
               <option value="7d">Nitro 7 days</option>
               <option value="30d">Nitro 30 days</option>
             </select>
-            {r.status !== "approved" && !r.is_admin && (
+              </>
+            )}
+            {!isPrimaryOwnerEmail(r.email) && r.status !== "approved" && !r.is_admin && (
               <button
                 type="button"
                 className="notes-btn"
@@ -21980,7 +22033,7 @@ function AdminApprovalsApp() {
                 Approve
               </button>
             )}
-            {r.status === "approved" && !r.is_admin && (
+            {!isPrimaryOwnerEmail(r.email) && r.status === "approved" && !r.is_admin && (
               <button
                 type="button"
                 className="notes-btn"
@@ -21991,7 +22044,7 @@ function AdminApprovalsApp() {
                 Revoke
               </button>
             )}
-            {!r.is_admin && (
+            {!isPrimaryOwnerEmail(r.email) && !r.is_admin && (
               <button
                 type="button"
                 className="notes-btn"
