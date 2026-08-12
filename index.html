@@ -2220,12 +2220,13 @@ html.theme-matrix body::after{
 .dm-overlay-backdrop{
   position:absolute;
   inset:0;
-  z-index:40;
+  z-index:120;
   background:rgba(2,6,23,0.72);
   display:flex;
   align-items:stretch;
   justify-content:center;
   padding:12px;
+  box-sizing:border-box;
 }
 .dm-overlay-panel{
   width:min(440px,100%);
@@ -16085,6 +16086,56 @@ function ChatApp({ openApp }) {
         </>
         )}
 
+        <div style={{ marginTop: 12, marginBottom: 4 }}>
+          <button
+            type="button"
+            className="chat-channel-item"
+            style={{
+              marginTop: 4,
+              fontWeight: 800,
+              width: "100%",
+              display: "block",
+              textAlign: "left",
+              padding: "10px 12px",
+              borderRadius: 8,
+              border: "1px solid var(--border)",
+              background: "var(--surface2)",
+              color: "var(--text)",
+              cursor: "pointer"
+            }}
+            onClick={() => setDmPanelOpen(true)}
+          >
+            ✉️ Direct Messages
+            {Object.values(dmUnread || {}).reduce((a, b) => a + (Number(b) || 0), 0) > 0 && (
+              <span
+                style={{
+                  marginLeft: 8,
+                  background: "#ef4444",
+                  color: "#fff",
+                  borderRadius: 999,
+                  fontSize: 10,
+                  fontWeight: 800,
+                  padding: "1px 6px"
+                }}
+              >
+                {Object.values(dmUnread || {}).reduce((a, b) => a + (Number(b) || 0), 0)}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            className="notes-btn"
+            style={{ width: "100%", marginTop: 6, fontSize: 12, fontWeight: 700 }}
+            onClick={() => {
+              setDmPanelOpen(true);
+              if (typeof openCreateGdm === "function") openCreateGdm();
+            }}
+          >
+            + New Group Chat
+          </button>
+        </div>
+
+
         </div>{/* end sidebar-scroll */}
         <div className="sidebar-footer">
 
@@ -16151,43 +16202,6 @@ function ChatApp({ openApp }) {
               setNitroClaimInfo(false);
             }}
           >
-
-        {/* Voice is above DMs; DMs open as overlay */}
-        <button
-          type="button"
-          className="chat-channel-item"
-          style={{ marginTop: 10, fontWeight: 800 }}
-          onClick={() => setDmPanelOpen(true)}
-        >
-          ✉️ Direct Messages
-          {Object.values(dmUnread || {}).reduce((a, b) => a + (b || 0), 0) > 0 && (
-            <span
-              style={{
-                marginLeft: 8,
-                background: "#ef4444",
-                color: "#fff",
-                borderRadius: 999,
-                fontSize: 10,
-                fontWeight: 800,
-                padding: "1px 6px"
-              }}
-            >
-              {Object.values(dmUnread || {}).reduce((a, b) => a + (b || 0), 0)}
-            </span>
-          )}
-        </button>
-        <button
-          type="button"
-          className="notes-btn"
-          style={{ width: "100%", marginTop: 6, fontSize: 12, fontWeight: 700 }}
-          onClick={() => {
-            setDmPanelOpen(true);
-            openCreateGdm();
-          }}
-        >
-          + New Group Chat
-        </button>
-
             🚀 Get Nitro
           </button>
         )}
