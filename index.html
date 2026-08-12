@@ -3627,13 +3627,8 @@ function Profile(){
     setBusy(true);
     const nick = String(name || "").trim().slice(0, 32);
     const pr = String(pronouns || "").trim().slice(0, 40);
-    const p0 = window.__browserOSProfile || {};
     const bioMax =
-      p0.is_turbo || (p0.tier || 0) >= 2
-        ? 600
-        : p0.is_nitro || p0.is_admin || p0.is_dev || (p0.tier || 0) >= 1
-        ? 400
-        : 300;
+      typeof bioCharLimit === "function" ? bioCharLimit() : 300;
     const about = String(bio || "").trim().slice(0, bioMax);
     const statusMsg = String(customStatus || "").trim().slice(0, 80);
     if (nick && !/^[A-Za-z0-9_ ]{2,32}$/.test(nick)) {
@@ -10954,10 +10949,50 @@ function applyProfileExpirations(profile, client) {
   return out;
 }
 
+/** Server entitlements (from get_my_entitlements). Client profile is display-only for perks. */
+function getServerEntitlements() {
+  try {
+    return window.__browserOSEntitlements || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function refreshServerEntitlements(client) {
+  const c = client || (typeof getSupabaseClient === "function" ? getSupabaseClient() : null);
+  if (!c) return null;
+  try {
+    const { data, error } = await c.rpc("get_my_entitlements");
+    if (error || !data) return getServerEntitlements();
+    const ent = typeof data === "string" ? JSON.parse(data) : data;
+    window.__browserOSEntitlements = ent;
+    // Mirror onto profile for UI badges only (limits still read entitlements first)
+    if (window.__browserOSProfile) {
+      window.__browserOSProfile.tier = ent.tier;
+      window.__browserOSProfile.is_nitro = !!ent.is_nitro;
+      window.__browserOSProfile.is_turbo = !!ent.is_turbo;
+      window.__browserOSProfile.is_admin = !!ent.is_admin;
+      window.__browserOSProfile.is_dev = !!ent.is_dev;
+    }
+    try {
+      window.dispatchEvent(
+        new CustomEvent("browseros-entitlements", { detail: ent })
+      );
+    } catch (_) {}
+    return ent;
+  } catch (_) {
+    return getServerEntitlements();
+  }
+}
+
 function getUserTier(profile) {
+  const ent = getServerEntitlements();
+  if (ent && typeof ent.tier === "number") {
+    return Math.min(2, Math.max(0, ent.tier | 0));
+  }
   const p = profile || window.__browserOSProfile;
   if (!p) return 0;
-  if (p.is_dev || p.is_admin) return 2; // staff get full Turbo perks
+  if (p.is_dev || p.is_admin) return 2;
   const t = parseInt(p.tier, 10);
   if (!isNaN(t) && t >= 0) return Math.min(2, Math.max(0, t));
   if (p.is_turbo) return 2;
@@ -10966,6 +11001,8 @@ function getUserTier(profile) {
 }
 
 function isNitroUser(profile) {
+  const ent = getServerEntitlements();
+  if (ent && typeof ent.is_nitro === "boolean") return !!ent.is_nitro || getUserTier(profile) >= 1;
   return getUserTier(profile) >= 1;
 }
 
@@ -10974,18 +11011,20 @@ function resolveShowBadge(pref, isTurbo, isNitro) {
   if (p === "none") return null;
   if (p === "turbo") return isTurbo ? "turbo" : isNitro ? "nitro" : null;
   if (p === "nitro") return isNitro || isTurbo ? "nitro" : null;
-  // auto
   if (isTurbo) return "turbo";
   if (isNitro) return "nitro";
   return null;
 }
 
 function isTurboUser(profile) {
-
+  const ent = getServerEntitlements();
+  if (ent && typeof ent.is_turbo === "boolean") return !!ent.is_turbo || getUserTier(profile) >= 2;
   return getUserTier(profile) >= 2;
 }
 
 function chatCharLimit(profile) {
+  const ent = getServerEntitlements();
+  if (ent && ent.char_limit) return Number(ent.char_limit) || 2000;
   const t = getUserTier(profile);
   if (t >= 2) return 8000;
   if (t >= 1) return 4000;
@@ -10993,10 +11032,21 @@ function chatCharLimit(profile) {
 }
 
 function uploadByteLimit(profile) {
+  const ent = getServerEntitlements();
+  if (ent && ent.upload_bytes) return Number(ent.upload_bytes) || 5 * 1024 * 1024;
   const t = getUserTier(profile);
   if (t >= 2) return 50 * 1024 * 1024;
   if (t >= 1) return 15 * 1024 * 1024;
   return 5 * 1024 * 1024;
+}
+
+function bioCharLimit(profile) {
+  const ent = getServerEntitlements();
+  if (ent && ent.bio_limit) return Number(ent.bio_limit) || 300;
+  const t = getUserTier(profile);
+  if (t >= 2) return 600;
+  if (t >= 1) return 400;
+  return 300;
 }
 
 function safeCssColor(value, fallback) {
@@ -11836,6 +11886,9 @@ function ChatApp({ openApp }) {
       if (cancelled) return;
       const myEmail = (session.user.email || "user").toLowerCase();
       setUserEmail(myEmail);
+      try {
+        refreshServerEntitlements(client);
+      } catch (_) {}
       setUserId(session.user.id);
       // Do not auto-prompt for notifications on every chat open (respect prior Allow/Block)
 
@@ -20107,6 +20160,9 @@ async function ensureUserProfile(client, user) {
   if (profile && profile.is_admin == null) profile.is_admin = false;
   profile = applyProfileExpirations(profile, client);
   window.__browserOSProfile = profile;
+  try {
+    refreshServerEntitlements();
+  } catch (_) {}
   return profile;
 }
 
@@ -21567,6 +21623,9 @@ function Root() {
         let profile = await ensureUserProfile(client, session.user);
         profile = applyProfileExpirations(profile, client);
         window.__browserOSProfile = profile;
+        try {
+          refreshServerEntitlements();
+        } catch (_) {}
         if (profile && profile._accessExpired) {
           setAccessExpired(true);
           setUnlocked(false);
