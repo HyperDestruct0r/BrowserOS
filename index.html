@@ -12049,11 +12049,8 @@ function ChatApp({ openApp }) {
     const isBlocked = blockedSet.has(target);
     try {
       if (isBlocked) {
-        await client
-          .from("chat_blocks")
-          .delete()
-          .ilike("blocker_email", me)
-          .ilike("blocked_email", target);
+        const { error } = await client.rpc("unblock_user", { p_email: target });
+        if (error) throw error;
         setBlockedSet(prev => {
           const n = new Set(prev);
           n.delete(target);
@@ -12063,14 +12060,8 @@ function ChatApp({ openApp }) {
           browserOSNotify({ title: "Unblocked", body: target });
         }
       } else {
-        const { error: bErr } = await client.from("chat_blocks").upsert({
-          blocker_email: me,
-          blocked_email: target
-        });
-        if (bErr) {
-          setError(bErr.message || "Block failed.");
-          return;
-        }
+        const { error } = await client.rpc("block_user", { p_email: target });
+        if (error) throw error;
         setBlockedSet(prev => new Set([...prev, target]));
         if (typeof browserOSNotify === "function") {
           browserOSNotify({ title: "Blocked", body: target });
@@ -13340,35 +13331,10 @@ function ChatApp({ openApp }) {
       );
       return;
     }
-    // Fallback: direct update (may be blocked by RLS)
-    const votes = Object.assign({}, payload.votes || {});
-    Object.keys(votes).forEach(k => {
-      votes[k] = (votes[k] || []).filter(
-        e => String(e).toLowerCase() !== me
-      );
-      if (!votes[k].length) delete votes[k];
-    });
-    const key = String(optionIndex);
-    votes[key] = (votes[key] || []).concat([me]);
-    const nextPayload = Object.assign({}, payload, { votes: votes });
-    setMessages(prev =>
-      prev.map(m =>
-        String(m.id) === mid
-          ? { ...m, embed_payload: nextPayload }
-          : m
-      )
+    setError(
+      (rpcErr && rpcErr.message) ||
+        "Could not save vote. Run browseros_high_priority_security.sql."
     );
-    const { error: upErr } = await client
-      .from("chat_messages")
-      .update({ embed_payload: nextPayload })
-      .eq("id", mid);
-    if (upErr) {
-      setError(
-        rpcErr.message ||
-          upErr.message ||
-          "Could not save vote. Run vote_chat_poll SQL."
-      );
-    }
   };
 
   const toggleReaction = async (messageId, emoji) => {
@@ -13972,13 +13938,10 @@ function ChatApp({ openApp }) {
         return;
       }
       setSending(true);
-      const { error: bErr } = await client.from("chat_blocks").upsert({
-        blocker_email: authorEmail,
-        blocked_email: target
-      });
+      const { error: bErr } = await client.rpc("block_user", { p_email: target });
       setSending(false);
       if (bErr) {
-        setError(bErr.message || "Block failed. Create chat_blocks table.");
+        setError(bErr.message || "Block failed.");
         return;
       }
       setBlockedSet(prev => new Set([...prev, target]));
@@ -13990,12 +13953,12 @@ function ChatApp({ openApp }) {
     if (unblockMatch) {
       const target = unblockMatch[1].replace(/^@/, "").toLowerCase();
       setSending(true);
-      await client
-        .from("chat_blocks")
-        .delete()
-        .ilike("blocker_email", authorEmail)
-        .ilike("blocked_email", target);
+      const { error: ubErr } = await client.rpc("unblock_user", { p_email: target });
       setSending(false);
+      if (ubErr) {
+        setError(ubErr.message || "Unblock failed.");
+        return;
+      }
       setBlockedSet(prev => {
         const n = new Set(prev);
         n.delete(target);
@@ -14666,6 +14629,10 @@ function ChatApp({ openApp }) {
         else if (/muted/i.test(msg)) setError("You are muted in public channels.");
         else if (/slowmode/i.test(msg)) setError("Slowmode active — wait a moment.");
         else if (/not_approved/i.test(msg)) setError("Your account is not approved.");
+        else if (/rate_limited/i.test(msg)) setError("You are sending messages too quickly. Slow down.");
+        else if (/channel_forbidden|forbidden/i.test(msg)) setError("You cannot access this channel.");
+        else if (/channel_readonly/i.test(msg)) setError("This channel is read-only for your role.");
+        else if (/not_activated/i.test(msg)) setError("Activate your account before chatting.");
         else setError(msg || "Failed to send. Deploy send_chat_message RPC.");
         return;
       }
