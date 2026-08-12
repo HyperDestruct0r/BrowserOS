@@ -10904,6 +10904,11 @@ function computeExpiryIso(preset) {
 }
 
 function isProfileActivated(profile) {
+  const ent = typeof getServerEntitlements === "function" ? getServerEntitlements() : null;
+  if (ent && typeof ent.activated === "boolean") {
+    if (ent.is_staff || ent.is_admin || ent.is_dev) return true;
+    return !!ent.activated && !!ent.approved;
+  }
   if (!profile) return false;
   if (profile.is_admin || profile.is_dev) return true;
   return profile.activated === true;
@@ -11003,17 +11008,27 @@ async function refreshServerEntitlements(client) {
   const c = client || (typeof getSupabaseClient === "function" ? getSupabaseClient() : null);
   if (!c) return null;
   try {
-    const { data, error } = await c.rpc("get_my_entitlements");
+    let data = null;
+    let error = null;
+    // Prefer access gate RPC
+    ({ data, error } = await c.rpc("get_access_gate"));
+    if (error) {
+      ({ data, error } = await c.rpc("get_my_entitlements"));
+    }
     if (error || !data) return getServerEntitlements();
     const ent = typeof data === "string" ? JSON.parse(data) : data;
     window.__browserOSEntitlements = ent;
-    // Mirror onto profile for UI badges only (limits still read entitlements first)
     if (window.__browserOSProfile) {
       window.__browserOSProfile.tier = ent.tier;
       window.__browserOSProfile.is_nitro = !!ent.is_nitro;
       window.__browserOSProfile.is_turbo = !!ent.is_turbo;
       window.__browserOSProfile.is_admin = !!ent.is_admin;
       window.__browserOSProfile.is_dev = !!ent.is_dev;
+      window.__browserOSProfile.activated = !!ent.activated;
+      window.__browserOSProfile.status = ent.status || window.__browserOSProfile.status;
+      window.__browserOSProfile._canUseOs = !!ent.can_use_os;
+      window.__browserOSProfile._needsActivation = !!ent.needs_activation;
+      window.__browserOSProfile._needsApproval = !!ent.needs_approval;
     }
     try {
       window.dispatchEvent(
@@ -11024,6 +11039,16 @@ async function refreshServerEntitlements(client) {
   } catch (_) {
     return getServerEntitlements();
   }
+}
+
+/** Server says user may enter the desktop (not client-editable). */
+function serverAllowsOsAccess() {
+  const ent = getServerEntitlements();
+  if (ent && typeof ent.can_use_os === "boolean") return !!ent.can_use_os;
+  const p = window.__browserOSProfile;
+  if (!p) return false;
+  if (p.is_admin || p.is_dev) return true;
+  return p.status === "approved" && p.activated === true && !isAccessExpired(p);
 }
 
 function getUserTier(profile) {
@@ -11759,19 +11784,7 @@ function ChatApp({ openApp }) {
     try {
       if (!client) throw new Error("Not connected");
       const { error } = await client.rpc("request_subscription", { p_plan: plan });
-      if (error) {
-        // Fallback: direct insert
-        const { data: sessionData } = await client.auth.getSession();
-        const session = sessionData && sessionData.session;
-        const em = (session && session.user && session.user.email) || userEmail;
-        const { error: iErr } = await client.from("subscription_requests").insert({
-          user_id: session && session.user && session.user.id,
-          email: String(em || "").toLowerCase(),
-          plan: plan,
-          status: "pending"
-        });
-        if (iErr) throw iErr;
-      }
+      if (error) throw error;
       // Notify staff channel
       try {
         await client.rpc("send_chat_message", {
@@ -21861,13 +21874,22 @@ function Root() {
     return (
       <PlanGateScreen
         profile={needsActivation}
-        onActivated={p => {
-          setNeedsActivation(null);
-          if (p && isAccessExpired(p)) {
+        onActivated={async p => {
+          const client = getSupabaseClient();
+          const ent = await refreshServerEntitlements(client);
+          if (ent && ent.access_expired) {
+            setNeedsActivation(null);
             setAccessExpired(true);
             return;
           }
-          setUnlocked(true);
+          if (ent && ent.can_use_os) {
+            setNeedsActivation(null);
+            setUnlocked(true);
+            return;
+          }
+          // Still not activated according to server — stay on gate
+          setError && setError;
+          setNeedsActivation(p || needsActivation);
         }}
         onSignOut={async () => {
           const client = getSupabaseClient();
@@ -21895,8 +21917,43 @@ function Root() {
   if (!unlocked) {
     return (
       <AuthScreen
-        onUnlock={(session, profile) => {
+        onUnlock={async (session, profile) => {
           setRevokeMsg("");
+          const client = getSupabaseClient();
+          // Always trust server gate — never unlock from client profile flags alone
+          let ent = null;
+          try {
+            ent = await refreshServerEntitlements(client);
+          } catch (_) {}
+          if (ent) {
+            if (ent.needs_approval) {
+              setPendingProfile(profile || { status: "pending" });
+              setUnlocked(false);
+              return;
+            }
+            if (ent.access_expired) {
+              setAccessExpired(true);
+              setUnlocked(false);
+              return;
+            }
+            if (ent.needs_activation || !ent.can_use_os) {
+              setNeedsActivation(profile || { email: ent.email, status: ent.status });
+              setUnlocked(false);
+              return;
+            }
+            if (ent.can_use_os) {
+              setNeedsActivation(null);
+              setPendingProfile(null);
+              setUnlocked(true);
+              return;
+            }
+          }
+          // Fallback if RPC missing: old behavior
+          if (profile && profile.status && profile.status !== "approved" && !profile.is_admin && !profile.is_dev) {
+            setPendingProfile(profile);
+            setUnlocked(false);
+            return;
+          }
           if (profile && !isProfileActivated(profile)) {
             setNeedsActivation(profile);
             setUnlocked(false);
