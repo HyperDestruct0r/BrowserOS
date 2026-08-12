@@ -10958,6 +10958,47 @@ function getServerEntitlements() {
   }
 }
 
+
+/** Upload chat attachment via Edge Function (server enforces tier size limits). */
+async function uploadChatMediaViaProxy(client, session, file) {
+  if (!file || !session || !session.access_token) {
+    throw new Error("Not signed in.");
+  }
+  if (typeof BROWSEROS_SUPABASE === "undefined" || !BROWSEROS_SUPABASE.url) {
+    throw new Error("Supabase is not configured.");
+  }
+  const endpoint =
+    String(BROWSEROS_SUPABASE.url).replace(/\/$/, "") +
+    "/functions/v1/chat-upload";
+  const form = new FormData();
+  form.append("file", file, file.name || "upload.bin");
+  const headers = {
+    Authorization: "Bearer " + session.access_token,
+    apikey: BROWSEROS_SUPABASE.anonKey || ""
+  };
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: headers,
+    body: form
+  });
+  let data = null;
+  try {
+    data = await res.json();
+  } catch (_) {
+    data = null;
+  }
+  if (!res.ok || !data || !data.ok) {
+    const err = (data && data.error) || "upload_failed";
+    const maxB = data && data.max_bytes;
+    const e = new Error(err);
+    e.code = err;
+    e.maxBytes = maxB;
+    e.status = res.status;
+    throw e;
+  }
+  return data;
+}
+
 async function refreshServerEntitlements(client) {
   const c = client || (typeof getSupabaseClient === "function" ? getSupabaseClient() : null);
   if (!c) return null;
@@ -12855,21 +12896,26 @@ function ChatApp({ openApp }) {
     };
     const client = getSupabaseClient();
     if (client) {
-      try {
-        await client.from("chat_channels").insert({
-          id: slug,
-          name: entry.name,
-          created_by: userEmail || "",
-          access: access
-        });
-      } catch (_) {}
+      const { data, error } = await client.rpc("staff_create_channel", {
+        p_id: slug,
+        p_name: entry.name,
+        p_access: access
+      });
+      if (error) {
+        setError(error.message || "Could not create channel (staff RPC).");
+        return;
+      }
+      const row = data && (data.id ? data : entry);
+      entry.id = row.id || slug;
+      entry.name = row.name || entry.name;
+      entry.access = row.access || access;
     }
-    const next = [...(customChannels || []), entry];
+    const next = [...(customChannels || []).filter(c => c.id !== entry.id), entry];
     persistCustomChannels(next);
     setNewChannelOpen(false);
     setNewChannelName("");
     setNewChannelAccess("open");
-    setChannel(slug);
+    setChannel(entry.id);
   };
 
   const saveEditChannel = async () => {
@@ -12883,12 +12929,18 @@ function ChatApp({ openApp }) {
     const access = editChannel.access || "open";
     const client = getSupabaseClient();
     if (client) {
-      try {
-        await client
-          .from("chat_channels")
-          .update({ name: name, access: access })
-          .eq("id", id);
-      } catch (_) {}
+      const { data, error } = await client.rpc("staff_update_channel", {
+        p_id: id,
+        p_name: name,
+        p_access: access
+      });
+      if (error) {
+        setError(error.message || "Could not update channel.");
+        return;
+      }
+      if (data && data.name) {
+        // use server values
+      }
     }
     const next = (customChannels || []).map(c =>
       c.id === id ? { ...c, name: name, access: access } : c
@@ -12907,9 +12959,11 @@ function ChatApp({ openApp }) {
     if (!confirm("Delete #" + cid + "? Messages remain in the database.")) return;
     const client = getSupabaseClient();
     if (client) {
-      try {
-        await client.from("chat_channels").delete().eq("id", cid);
-      } catch (_) {}
+      const { error } = await client.rpc("staff_delete_channel", { p_id: cid });
+      if (error) {
+        setError(error.message || "Could not delete channel.");
+        return;
+      }
     }
     const next = (customChannels || []).filter(c => c.id !== cid);
     persistCustomChannels(next);
@@ -14269,6 +14323,7 @@ function ChatApp({ openApp }) {
       let fileEmbed = null;
       if (pendingImage && pendingImage.file) {
         const f = pendingImage.file;
+        // Soft client hint (real enforcement is the Edge Function)
         if (f.size > uploadByteLimit()) {
           setSending(false);
           setError(
@@ -14278,40 +14333,44 @@ function ChatApp({ openApp }) {
           );
           return;
         }
-        const ext =
-          (f.name.split(".").pop() || "bin")
-            .toLowerCase()
-            .replace(/[^a-z0-9]/g, "") || "bin";
-        const path =
-          session.user.id + "/" + Date.now().toString(36) + "." + ext;
-        const { error: upErr } = await client.storage
-          .from("chat-media")
-          .upload(path, f, {
-            contentType: f.type || "application/octet-stream",
-            upsert: false
-          });
-        if (upErr) {
+        try {
+          const uploaded = await uploadChatMediaViaProxy(client, session, f);
+          const url = uploaded.url || null;
+          const isImg =
+            uploaded.kind === "image" ||
+            pendingImage.kind === "image" ||
+            String(f.type || "").indexOf("image/") === 0;
+          if (isImg) {
+            imageUrl = url;
+          } else {
+            fileEmbed = {
+              name: uploaded.name || f.name || "file",
+              size: uploaded.size || f.size,
+              mime: uploaded.mime || f.type || "application/octet-stream",
+              url: url
+            };
+          }
+        } catch (upErr) {
           setSending(false);
-          setError(
-            upErr.message ||
-              "Upload failed. Create a public Supabase Storage bucket named chat-media."
-          );
+          const code = (upErr && upErr.code) || (upErr && upErr.message) || "";
+          if (/upload_too_large/i.test(String(code))) {
+            const mb = upErr.maxBytes
+              ? Math.round(Number(upErr.maxBytes) / (1024 * 1024))
+              : Math.round(uploadByteLimit() / (1024 * 1024));
+            setError(
+              "File too large for your plan (limit " +
+                mb +
+                " MB). Free 5 · Nitro 15 · Turbo 50."
+            );
+          } else if (/not_approved|banned|invalid_session|missing_authorization/i.test(String(code))) {
+            setError("Upload blocked: " + code);
+          } else {
+            setError(
+              (upErr && upErr.message) ||
+                "Upload failed. Deploy the chat-upload Edge Function and chat-media bucket."
+            );
+          }
           return;
-        }
-        const { data: pub } = client.storage.from("chat-media").getPublicUrl(path);
-        const url = pub && pub.publicUrl ? pub.publicUrl : null;
-        const isImg =
-          pendingImage.kind === "image" ||
-          String(f.type || "").indexOf("image/") === 0;
-        if (isImg) {
-          imageUrl = url;
-        } else {
-          fileEmbed = {
-            name: f.name || "file." + ext,
-            size: f.size,
-            mime: f.type || "application/octet-stream",
-            url: url
-          };
         }
       }
       const msgBody =
