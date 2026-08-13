@@ -21783,11 +21783,11 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
           }
         }
 
-        // If email confirmation is required, session may be null — profile
-        // should still be created by the auth.users trigger in Supabase.
+        // With Confirm email OFF in Supabase, session is returned immediately.
+        // If session is null, the project still has email confirmation enabled.
         if (!data.session) {
           setInfo(
-            "Registration submitted. Confirm your email if required, then wait for an admin to approve you. (If you never appear in Admin, run the profiles trigger SQL.)"
+            "Account created, but Supabase did not return a session. In Supabase go to Authentication → Providers → Email and turn OFF “Confirm email”, then confirm this user under Authentication → Users (⋯ → Confirm user). After that, sign in."
           );
           setMode("signin");
           setPassword("");
@@ -21824,23 +21824,11 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
         return;
       }
 
-      // Password reset request
+      // Password reset — no email (BrowserOS avoids Supabase mail rate limits)
       if (mode === "reset") {
-        if (!trimmed) {
-          setError("Enter your email address.");
-          return;
-        }
-        const redirectTo = window.location.href.split("#")[0];
-        const { error: resetError } = await client.auth.resetPasswordForEmail(trimmed, {
-          redirectTo
-        });
-        if (resetError) {
-          setError(resetError.message || "Could not send reset email.");
-          return;
-        }
         setResetSent(true);
         setInfo(
-          "If an account exists for that email, a reset link was sent. Open it, then set a new password on the recovery screen."
+          "Password reset emails are disabled. Ask a BrowserOS admin/owner to reset your password in Supabase (Authentication → Users → user → Reset password / Send recovery), or have them set a temporary password for you."
         );
         return;
       }
@@ -21857,7 +21845,7 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
           setError("Incorrect email or password.");
         } else if (msg.includes("email not confirmed")) {
           setError(
-            "Email not confirmed. Check your inbox or disable confirmations in Supabase (dev)."
+            "This account is not confirmed in Supabase. Owner: Authentication → Providers → Email → turn OFF “Confirm email”. Then Authentication → Users → find this email → Confirm user. No inbox email is required."
           );
         } else {
           setError(authError.message || "Sign-in failed.");
