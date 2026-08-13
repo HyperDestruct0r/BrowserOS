@@ -3711,6 +3711,7 @@ function Profile(){
   const [presenceStatus, setPresenceStatus] = useState("online");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
+  const [cropEditor, setCropEditor] = useState(null);
   const [email, setEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const [isNitro, setIsNitro] = useState(false);
@@ -3862,6 +3863,7 @@ function Profile(){
           window.__browserOSProfile.display_name = nick || null;
           window.__browserOSProfile.pronouns = pr || null;
           window.__browserOSProfile.bio = about || null;
+          window.__browserOSProfile.custom_status = statusMsg || null;
           window.__browserOSProfile.share_activity = !!shareActivity;
           window.__browserOSProfile.presence_status = presenceStatus || "online";
           window.__browserOSProfile.custom_activity =
@@ -3870,6 +3872,18 @@ function Profile(){
           window.__browserOSProfile.name_animation = nameAnimation || "none";
           window.__browserOSProfile.name_font = nameFont || "default";
         }
+        try {
+          window.dispatchEvent(
+            new CustomEvent("browseros-profile-updated", {
+              detail: {
+                email: String(email || "").toLowerCase(),
+                display_name: nick || null,
+                custom_status: statusMsg || null,
+                presence_status: presenceStatus || "online"
+              }
+            })
+          );
+        } catch (_) {}
         try {
           const em = String(email || "").toLowerCase();
           window.dispatchEvent(
@@ -3891,6 +3905,35 @@ function Profile(){
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const openBannerCrop = file => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose an image file.");
+      return;
+    }
+    if (file.size > 1.8 * 1024 * 1024) {
+      setError("Banner image too large — keep under ~1.5–2 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        setError("Could not read banner file.");
+        return;
+      }
+      setCropEditor({
+        mode: "banner",
+        src: reader.result,
+        next: dataUrl => {
+          setBannerUrl(dataUrl);
+          setError("");
+        }
+      });
+    };
+    reader.onerror = () => setError("Failed to read banner file.");
+    reader.readAsDataURL(file);
+  };
+
   const onAvatar = async (file) => {
     if (!file) return;
     setError("");
@@ -3905,7 +3948,66 @@ function Profile(){
     const isGif =
       file.type === "image/gif" || /\.gif$/i.test(file.name || "");
     if (isGif && !(isAdmin || isTurbo)) {
-      setError("Animated GIF avatars require BrowserOS Nitro (or staff).");
+      setError("Animated GIF avatars require BrowserOS Turbo (or staff).");
+      return;
+    }
+    // Non-GIF: crop first
+    if (!isGif) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result !== "string") {
+          setError("Could not read image.");
+          return;
+        }
+        setCropEditor({
+          mode: "avatar",
+          src: reader.result,
+          next: async dataUrl => {
+            try {
+              const res = await fetch(dataUrl);
+              const blob = await res.blob();
+              const client = getSupabaseClient();
+              if (!client) {
+                setError("Supabase not configured.");
+                return;
+              }
+              setBusy(true);
+              const { data: sessionData } = await client.auth.getSession();
+              const session = sessionData && sessionData.session;
+              if (!session) {
+                setBusy(false);
+                setError("Not signed in.");
+                return;
+              }
+              const path = session.user.id + "/avatar.jpg";
+              const { error: upErr } = await client.storage
+                .from("avatars")
+                .upload(path, blob, { upsert: true, contentType: "image/jpeg" });
+              if (upErr) {
+                setBusy(false);
+                setError(upErr.message || "Upload failed.");
+                return;
+              }
+              const { data: pub } = client.storage.from("avatars").getPublicUrl(path);
+              const url =
+                pub && pub.publicUrl ? pub.publicUrl + "?t=" + Date.now() : "";
+              await client
+                .from("profiles")
+                .update({ avatar_url: url })
+                .eq("user_id", session.user.id);
+              setBusy(false);
+              setAvatarUrl(url);
+              setSaved(true);
+              setTimeout(() => setSaved(false), 2000);
+            } catch (err) {
+              setBusy(false);
+              setError((err && err.message) || "Avatar upload failed.");
+            }
+          }
+        });
+      };
+      reader.onerror = () => setError("Failed to read image.");
+      reader.readAsDataURL(file);
       return;
     }
     const client = getSupabaseClient();
@@ -3950,6 +4052,18 @@ function Profile(){
 
   return (
     <div className="profile internal" style={{ padding: 24, maxWidth: 480 }}>
+      {cropEditor && (
+        <ImageCropModal
+          src={cropEditor.src}
+          mode={cropEditor.mode}
+          onCancel={() => setCropEditor(null)}
+          onConfirm={dataUrl => {
+            const next = cropEditor.next;
+            setCropEditor(null);
+            if (typeof next === "function") next(dataUrl);
+          }}
+        />
+      )}
       <h2 style={{ marginTop: 0 }}>Profile</h2>
       <p style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 16 }}>
         Display name is used for chat pings like <code>@YourName</code>. Avatar is separate from wallpaper.
@@ -4080,23 +4194,7 @@ function Profile(){
                   setError("Banner image too large — keep under ~1.5–2 MB.");
                   return;
                 }
-                const reader = new FileReader();
-                reader.onload = () => {
-                  const dataUrl = reader.result;
-                  if (typeof dataUrl !== "string") {
-                    setError("Could not read banner file.");
-                    return;
-                  }
-                  if (dataUrl.length > 1800000) {
-                    setError("Encoded banner too large. Use a smaller image.");
-                    return;
-                  }
-                  setBannerUrl(dataUrl);
-                  setError("");
-                  setSaved(false);
-                };
-                reader.onerror = () => setError("Failed to read banner file.");
-                reader.readAsDataURL(f);
+                openBannerCrop(f);
               }}
             >
               <div style={{ fontWeight: 700, fontSize: 13 }}>Upload banner photo</div>
@@ -4111,31 +4209,7 @@ function Profile(){
                 onChange={e => {
                   const f = e.target.files && e.target.files[0];
                   e.target.value = "";
-                  if (!f) return;
-                  if (!f.type.startsWith("image/")) {
-                    setError("Please choose an image file.");
-                    return;
-                  }
-                  if (f.size > 1.8 * 1024 * 1024) {
-                    setError("Banner image too large — keep under ~1.5–2 MB.");
-                    return;
-                  }
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const dataUrl = reader.result;
-                    if (typeof dataUrl !== "string") {
-                      setError("Could not read banner file.");
-                      return;
-                    }
-                    if (dataUrl.length > 1800000) {
-                      setError("Encoded banner too large. Use a smaller image.");
-                      return;
-                    }
-                    setBannerUrl(dataUrl);
-                    setError("");
-                  };
-                  reader.onerror = () => setError("Failed to read banner file.");
-                  reader.readAsDataURL(f);
+                  if (f) openBannerCrop(f);
                 }}
               />
             </div>
@@ -7230,6 +7304,166 @@ function HistoryApp({ openSite }) {
 }
 
 /* ─── WALLPAPER (.os) ─── */
+
+function ImageCropModal({ src, mode, onCancel, onConfirm }) {
+  const isCircle = mode === "avatar";
+  const aspect = isCircle ? 1 : 3;
+  const viewW = isCircle ? 280 : 360;
+  const viewH = Math.round(viewW / aspect);
+  const [img, setImg] = useState(null);
+  const [scale, setScale] = useState(1);
+  const [ox, setOx] = useState(0);
+  const [oy, setOy] = useState(0);
+  const dragRef = useRef(null);
+
+  useEffect(() => {
+    if (!src) return;
+    const image = new Image();
+    image.onload = () => {
+      setImg(image);
+      const cover = Math.max(viewW / image.width, viewH / image.height);
+      setScale(cover);
+      setOx((viewW - image.width * cover) / 2);
+      setOy((viewH - image.height * cover) / 2);
+    };
+    image.src = src;
+  }, [src]);
+
+  const onPointerDown = e => {
+    e.preventDefault();
+    const pt = e.touches ? e.touches[0] : e;
+    dragRef.current = { x: pt.clientX, y: pt.clientY, ox: ox, oy: oy };
+  };
+  const onPointerMove = e => {
+    if (!dragRef.current) return;
+    const pt = e.touches ? e.touches[0] : e;
+    setOx(dragRef.current.ox + (pt.clientX - dragRef.current.x));
+    setOy(dragRef.current.oy + (pt.clientY - dragRef.current.y));
+  };
+  const onPointerUp = () => {
+    dragRef.current = null;
+  };
+
+  const confirm = () => {
+    if (!img) return;
+    const outW = isCircle ? 256 : 900;
+    const outH = isCircle ? 256 : Math.round(outW / aspect);
+    const canvas = document.createElement("canvas");
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext("2d");
+    const sx = -ox / scale;
+    const sy = -oy / scale;
+    const sw = viewW / scale;
+    const sh = viewH / scale;
+    if (isCircle) {
+      ctx.beginPath();
+      ctx.arc(outW / 2, outH / 2, outW / 2, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+    }
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH);
+    try {
+      onConfirm(canvas.toDataURL("image/jpeg", 0.88));
+    } catch (_) {
+      onConfirm(src);
+    }
+  };
+
+  return (
+    <div className="sandbox-warning-overlay" style={{ zIndex: 100001 }} onClick={onCancel}>
+      <div
+        className="sandbox-warning-box"
+        style={{ maxWidth: viewW + 48, width: "auto", textAlign: "left" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 style={{ marginBottom: 8 }}>
+          {isCircle ? "Crop profile photo" : "Crop profile banner"}
+        </h3>
+        <p style={{ marginBottom: 12, fontSize: 12 }}>
+          Drag the image to position the highlighted region. Use zoom to resize.
+        </p>
+        <div
+          style={{
+            width: viewW,
+            height: viewH,
+            margin: "0 auto 12px",
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: isCircle ? "50%" : 12,
+            border: "2px solid var(--accent)",
+            background: "#0f172a",
+            touchAction: "none",
+            cursor: "grab"
+          }}
+          onMouseDown={onPointerDown}
+          onMouseMove={onPointerMove}
+          onMouseUp={onPointerUp}
+          onMouseLeave={onPointerUp}
+          onTouchStart={onPointerDown}
+          onTouchMove={onPointerMove}
+          onTouchEnd={onPointerUp}
+        >
+          {img && (
+            <img
+              src={src}
+              alt=""
+              draggable={false}
+              style={{
+                position: "absolute",
+                left: ox,
+                top: oy,
+                width: img.width * scale,
+                height: img.height * scale,
+                maxWidth: "none",
+                pointerEvents: "none",
+                userSelect: "none"
+              }}
+            />
+          )}
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Zoom</div>
+        <input
+          type="range"
+          min="0.2"
+          max="3"
+          step="0.01"
+          value={scale}
+          onChange={e => {
+            const next = Number(e.target.value);
+            if (!img) {
+              setScale(next);
+              return;
+            }
+            const cx = viewW / 2;
+            const cy = viewH / 2;
+            const imgCx = (cx - ox) / scale;
+            const imgCy = (cy - oy) / scale;
+            setScale(next);
+            setOx(cx - imgCx * next);
+            setOy(cy - imgCy * next);
+          }}
+          style={{ width: "100%", accentColor: "var(--accent)", marginBottom: 14 }}
+        />
+        <div className="sandbox-warning-actions">
+          <button type="button" onClick={onCancel}>Cancel</button>
+          <button
+            type="button"
+            style={{
+              background: "rgba(110,231,183,0.15)",
+              borderColor: "rgba(110,231,183,0.4)",
+              color: "var(--accent)"
+            }}
+            onClick={confirm}
+          >
+            Apply crop
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function WallpaperApp() {
   const [preview, setPreview] = useState(() => Wallpaper.get());
   const [blur, setBlur] = useState(() => (Wallpaper.get()?.blur ?? 0));
@@ -7238,10 +7472,14 @@ function WallpaperApp() {
   const [dragging, setDragging] = useState(false);
 
   const applyLive = (dataUrl, blurVal) => {
-    const next = Wallpaper.set(dataUrl, blurVal);
-    setPreview(next);
-    setBlur(next.blur);
-    window.dispatchEvent(new CustomEvent("browseros-wallpaper", { detail: next }));
+    try {
+      const next = Wallpaper.set(dataUrl, blurVal);
+      setPreview(next);
+      setBlur(next.blur);
+      window.dispatchEvent(new CustomEvent("browseros-wallpaper", { detail: next }));
+    } catch (err) {
+      setErr((err && err.message) || "Could not save wallpaper.");
+    }
   };
 
   const readFile = (file) => {
@@ -8286,7 +8524,16 @@ const Wallpaper = {
       dataUrl,
       blur: Math.min(1, Math.max(0, Number(blur) || 0))
     };
-    localStorage.setItem(this.key, JSON.stringify(payload));
+    try {
+      localStorage.setItem(this.key, JSON.stringify(payload));
+    } catch (err) {
+      try {
+        localStorage.removeItem(this.key);
+        localStorage.setItem(this.key, JSON.stringify(payload));
+      } catch (e2) {
+        throw new Error("Browser storage is full. Use a smaller image or clear site data.");
+      }
+    }
     return payload;
   },
 
@@ -11838,6 +12085,30 @@ function ChatApp({ openApp }) {
   const [profileLabelBusy, setProfileLabelBusy] = useState(false);
   const [reactions, setReactions] = useState({}); // messageId -> [{emoji, count, mine}]
   const [memberList, setMemberList] = useState([]); // profiles
+  useEffect(() => {
+    const onProf = (ev) => {
+      const d = (ev && ev.detail) || {};
+      const em = String(d.email || "").toLowerCase();
+      if (!em) return;
+      setMemberList(prev =>
+        (prev || []).map(p => {
+          if (String(p.email || "").toLowerCase() !== em) return p;
+          return {
+            ...p,
+            display_name:
+              d.display_name !== undefined ? d.display_name : p.display_name,
+            custom_status:
+              d.custom_status !== undefined ? d.custom_status : p.custom_status
+          };
+        })
+      );
+      if (d.display_name) {
+        setNickMap(prev => ({ ...prev, [em]: d.display_name }));
+      }
+    };
+    window.addEventListener("browseros-profile-updated", onProf);
+    return () => window.removeEventListener("browseros-profile-updated", onProf);
+  }, []);
   const [onlineSet, setOnlineSet] = useState(() => new Set());
   const [memberMenu, setMemberMenu] = useState(null); // {x,y,email}
   const [showMembers, setShowMembers] = useState(true);
@@ -18331,9 +18602,9 @@ function ChatApp({ openApp }) {
                         );
                       return null;
                     })()}
-                    {(activityMap[em] || p.custom_status) && (
+                    {(p.custom_status || activityMap[em]) && (
                       <div className="member-activity">
-                        {activityMap[em] || p.custom_status}
+                        {p.custom_status || activityMap[em]}
                       </div>
                     )}
                   </span>
@@ -20692,7 +20963,10 @@ function App() {
             className={"wallpaper-layer" + (wallpaper?.dataUrl ? " on" : "")}
             style={
               wallpaper?.dataUrl
-                ? { backgroundImage: `url(${wallpaper.dataUrl})` }
+                ? {
+                    backgroundImage: "url(" + wallpaper.dataUrl + ")",
+                    filter: "blur(" + ((wallpaper.blur || 0) * 24) + "px)"
+                  }
                 : undefined
             }
           />
