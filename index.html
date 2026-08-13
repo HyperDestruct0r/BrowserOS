@@ -3714,6 +3714,7 @@ function Profile(){
   const [cropEditor, setCropEditor] = useState(null);
   const [email, setEmail] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isDev, setIsDev] = useState(false);
   const [isNitro, setIsNitro] = useState(false);
   const [isTurbo, setIsTurbo] = useState(false);
   const [userTier, setUserTier] = useState(0);
@@ -3769,7 +3770,8 @@ function Profile(){
         setShareActivity(data.share_activity != null ? !!data.share_activity : true);
         setCustomActivity(data.custom_activity || "");
         setPresenceStatus(data.presence_status || "online");
-        setIsAdmin(!!(data.is_admin || data.is_dev));
+        setIsAdmin(!!data.is_admin);
+        setIsDev(!!data.is_dev);
         setIsNitro(!!data.is_nitro || !!data.is_turbo || (data.tier || 0) >= 1);
         setIsTurbo(!!data.is_turbo || (data.tier || 0) >= 2);
         setUserTier(getUserTier(data));
@@ -3830,14 +3832,14 @@ function Profile(){
               isAdmin || isNitro
                 ? String(customActivity || "").trim().slice(0, 80) || null
                 : undefined,
-            ...(isAdmin || isNitro
+            ...(isAdmin || isDev || isNitro
               ? {
                   avatar_decoration: avatarFrame || avatarDeco || "none",
                   card_decoration: bannerEffect || cardDeco || "none",
                   member_card_style: memberCardStyle || "none",
                   banner_effect: bannerEffect || "none",
                   avatar_frame: avatarFrame || "none",
-                  badge_display: badgeDisplay || "auto",
+                  badge_display: badgeDisplay != null ? badgeDisplay : "auto",
                   name_animation: nameAnimation || "none",
                   name_font: nameFont || "default"
                 }
@@ -3868,7 +3870,7 @@ function Profile(){
           window.__browserOSProfile.presence_status = presenceStatus || "online";
           window.__browserOSProfile.custom_activity =
             isAdmin || isNitro ? String(customActivity || "").trim() : null;
-          window.__browserOSProfile.badge_display = badgeDisplay || "auto";
+          window.__browserOSProfile.badge_display = badgeDisplay != null ? badgeDisplay : "auto";
           window.__browserOSProfile.name_animation = nameAnimation || "none";
           window.__browserOSProfile.name_font = nameFont || "default";
         }
@@ -3890,7 +3892,7 @@ function Profile(){
             new CustomEvent("browseros-profile-cosmetics", {
               detail: {
                 email: em,
-                badge_display: badgeDisplay || "auto",
+                badge_display: badgeDisplay != null ? badgeDisplay : "auto",
                 name_animation: nameAnimation || "none",
                 name_font: nameFont || "default"
               }
@@ -4667,16 +4669,26 @@ function Profile(){
 
             <div style={{ marginTop: 14 }} className="field-label">Badge visibility</div>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
-              Choose what others see next to your name
+              Choose what others see next to your name (Nitro/Turbo and staff titles)
             </div>
             <div className="deco-picker">
               {[
-                { id: "auto", label: "Auto (best tier)" },
-                ...(isTurbo || isAdmin
+                { id: "auto", label: "Auto (best)" },
+                ...(isDev
+                  ? [
+                      { id: "dev", label: "DEV title" },
+                      { id: "admin", label: "ADMIN title" }
+                    ]
+                  : isAdmin
+                  ? [{ id: "admin", label: "ADMIN title" }]
+                  : []),
+                ...(isTurbo || isAdmin || isDev
                   ? [{ id: "turbo", label: "Turbo only" }]
                   : []),
-                { id: "nitro", label: "Nitro only" },
-                { id: "none", label: "Hide badge" }
+                ...(isNitro || isTurbo || isAdmin || isDev
+                  ? [{ id: "nitro", label: "Nitro only" }]
+                  : []),
+                { id: "none", label: "Hide all badges" }
               ].map(opt => (
                 <button
                   key={opt.id}
@@ -8105,56 +8117,48 @@ function Settings() {
 
       <div style={cardStyle}>
 
-        {/* THEME */}
-        <button
-          style={buttonStyle}
-          onClick={toggleTheme}
-          onMouseOver={e =>
-            e.currentTarget.style.background = "rgba(255,255,255,0.06)"
-          }
-          onMouseOut={e =>
-            e.currentTarget.style.background = "rgba(255,255,255,0.03)"
-          }
-        >
-          <span>Theme (light/dark)</span>
-          <span style={{ opacity: 0.7 }}>{theme}</span>
-        </button>
-        <div style={{ padding: "8px 4px 4px", fontSize: 12, color: "var(--text-muted)" }}>
-          Nitro &amp; Developer Exclusives — themes{" "}
-          {isTurboUser() ? "" : isNitroUser() ? "(Turbo themes below)" : "(requires Nitro/Turbo)"}
+        {/* THEME — only change themes here (not in chat chrome) */}
+        <div style={{ padding: "4px 4px 8px", fontSize: 13, fontWeight: 800 }}>
+          Appearance
+        </div>
+        <div style={{ padding: "0 4px 8px", fontSize: 12, color: "var(--text-muted)" }}>
+          Everyone can use Light or Dark. Extra themes unlock with Nitro or staff roles.
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           {[
-            { id: "dark", label: "Default Dark", nitro: false },
+            { id: "dark", label: "Dark", nitro: false },
             { id: "light", label: "Light", nitro: false },
             { id: "oled", label: "OLED Midnight", nitro: true },
             { id: "cyberpunk", label: "Cyberpunk Neon", nitro: true },
             { id: "matrix", label: "Retro Matrix", nitro: true }
-          ].map(opt => (
-            <button
-              key={opt.id}
-              type="button"
-              className="notes-btn"
-              disabled={opt.nitro && !isNitroUser()}
-              style={{
-                fontSize: 11,
-                opacity: opt.nitro && !isNitroUser() ? 0.45 : 1,
-                borderColor: theme === opt.id ? "var(--accent)" : undefined,
-                fontWeight: theme === opt.id ? 800 : 500
-              }}
-              onClick={() => {
-                if (opt.nitro && !isNitroUser()) return;
-                applyTheme(opt.id);
-              }}
-            >
-              {opt.label}
-              {opt.nitro ? " 🚀" : ""}
-            </button>
-          ))}
+          ].map(opt => {
+            const locked = opt.nitro && !isNitroUser();
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                className="notes-btn"
+                disabled={locked}
+                style={{
+                  fontSize: 11,
+                  opacity: locked ? 0.45 : 1,
+                  borderColor: theme === opt.id ? "var(--accent)" : undefined,
+                  fontWeight: theme === opt.id ? 800 : 500
+                }}
+                onClick={() => {
+                  if (locked) return;
+                  applyTheme(opt.id);
+                }}
+              >
+                {opt.label}
+                {opt.nitro ? " 🚀" : ""}
+              </button>
+            );
+          })}
         </div>
         {!isNitroUser() && (
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>
-            Unlock OLED / Cyberpunk / Matrix with BrowserOS Nitro.
+            Unlock OLED / Cyberpunk / Matrix with BrowserOS Nitro (or staff).
           </div>
         )}
 
@@ -11687,11 +11691,23 @@ function isNitroUser(profile) {
 
 function resolveShowBadge(pref, isTurbo, isNitro) {
   const p = String(pref || "auto");
-  if (p === "none") return null;
+  if (p === "none" || p === "admin" || p === "dev") return null;
   if (p === "turbo") return isTurbo ? "turbo" : isNitro ? "nitro" : null;
   if (p === "nitro") return isNitro || isTurbo ? "nitro" : null;
   if (isTurbo) return "turbo";
   if (isNitro) return "nitro";
+  return null;
+}
+
+/** Staff title next to chat name: auto | dev | admin | none */
+function resolveStaffRoleTag(pref, isDev, isAdmin) {
+  const p = String(pref || "auto");
+  if (p === "none") return null;
+  if (p === "dev") return isDev ? "dev" : null;
+  if (p === "admin") return isAdmin || isDev ? "admin" : null;
+  // auto (and nitro/turbo prefs still allow staff titles by default)
+  if (isDev) return "dev";
+  if (isAdmin) return "admin";
   return null;
 }
 
@@ -12202,7 +12218,11 @@ function ChatApp({ openApp }) {
       const d = ev && ev.detail;
       if (!d || !d.email) return;
       const em = String(d.email).toLowerCase();
-      setBadgePrefMap(prev => Object.assign({}, prev, { [em]: d.badge_display || "auto" }));
+      setBadgePrefMap(prev =>
+        Object.assign({}, prev, {
+          [em]: d.badge_display != null ? d.badge_display : "auto"
+        })
+      );
       setNameAnimMap(prev =>
         Object.assign({}, prev, { [em]: d.name_animation || "none" })
       );
@@ -15718,16 +15738,32 @@ function ChatApp({ openApp }) {
               <div style={{ marginTop: 12 }}>
                 <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>
                   {profileCard.displayName || profileCard.email || "User"}
-                  {profileCard.isDev && (
-                    <span style={{ color: "#eab308", fontSize: 12, marginLeft: 8 }}>
-                      DEV
-                    </span>
-                  )}
-                  {profileCard.isAdmin && !profileCard.isDev && (
-                    <span style={{ color: "#f87171", fontSize: 12, marginLeft: 8 }}>
-                      ADMIN
-                    </span>
-                  )}
+                  {(() => {
+                    const pref =
+                      profileCard.badgeDisplay ||
+                      (badgePrefMap &&
+                        badgePrefMap[String(profileCard.email || "").toLowerCase()]) ||
+                      "auto";
+                    const staff = resolveStaffRoleTag(
+                      pref,
+                      !!profileCard.isDev,
+                      !!profileCard.isAdmin
+                    );
+                    return (
+                      <>
+                        {staff === "dev" && (
+                          <span style={{ color: "#eab308", fontSize: 12, marginLeft: 8 }}>
+                            DEV
+                          </span>
+                        )}
+                        {staff === "admin" && (
+                          <span style={{ color: "#f87171", fontSize: 12, marginLeft: 8 }}>
+                            ADMIN
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
                   {(() => {
                     const turbo =
                       !!profileCard.isTurbo ||
@@ -17492,22 +17528,32 @@ function ChatApp({ openApp }) {
                           nickMap[em] ||
                           m.author_email ||
                           "user";
-                    const roleTag =
-                      (devEmails && devEmails.has(em)
-                        ? " · dev"
-                        : isChatAdminAuthor(m, adminEmails)
-                        ? " · admin"
-                        : "");
                     let pref =
                       (badgePrefMap && badgePrefMap[em]) ||
                       (isMine &&
                       window.__browserOSProfile &&
                       window.__browserOSProfile.badge_display) ||
                       "auto";
-                    // Prefer explicit map value even when "none"
                     if (badgePrefMap && Object.prototype.hasOwnProperty.call(badgePrefMap, em)) {
                       pref = badgePrefMap[em] || "auto";
                     }
+                    const isDevAuthor =
+                      !!(devEmails && devEmails.has(em)) ||
+                      !!(m.is_dev);
+                    const isAdmAuthor =
+                      isChatAdminAuthor(m, adminEmails) ||
+                      !!(m.is_admin);
+                    const staffTag = resolveStaffRoleTag(
+                      pref,
+                      isDevAuthor,
+                      isAdmAuthor
+                    );
+                    const roleTag =
+                      staffTag === "dev"
+                        ? " · dev"
+                        : staffTag === "admin"
+                        ? " · admin"
+                        : "";
                     const show = resolveShowBadge(pref, turbo, nitro);
                     return (
                       <>
@@ -20813,19 +20859,6 @@ function App() {
             </div>
 
             <button
-              className={"theme-toggle toolbar-desktop-only " + theme}
-              onClick={() =>
-                setTheme(theme === "dark" ? "light" : "dark")
-              }
-            >
-              <div className="theme-toggle-track">
-                <div className="theme-toggle-thumb">
-                  {theme === "dark" ? "🌙" : "☀️"}
-                </div>
-              </div>
-            </button>
-
-            <button
               className="nav-btn toolbar-desktop-only"
               title="Bookmark"
               onClick={toggleBookmark}
@@ -20864,17 +20897,6 @@ function App() {
               style={{ maxHeight: "85vh", overflowY: "auto" }}
             >
               <div className="mobile-sheet-handle" />
-              <div
-                className="mobile-sheet-row"
-                onClick={() => {
-                  setTheme(theme === "dark" ? "light" : "dark");
-                }}
-              >
-                <span>Theme</span>
-                <span style={{ opacity: 0.7 }}>
-                  {theme === "dark" ? "🌙 Dark" : "☀️ Light"}
-                </span>
-              </div>
               <div
                 className="mobile-sheet-row"
                 onClick={() => {
