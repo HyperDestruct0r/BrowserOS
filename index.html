@@ -3724,7 +3724,9 @@ function Profile(){
   const [turboAccent, setTurboAccent] = useState("#22d3ee");
   const [turboHeaderAura, setTurboHeaderAura] = useState("#6366f1");
   const [turboCardGlow, setTurboCardGlow] = useState("#a78bfa");
-  const [badgeDisplay, setBadgeDisplay] = useState("auto"); // auto|turbo|nitro|none
+  const [badgeDisplay, setBadgeDisplay] = useState("auto"); // auto|turbo|nitro|none (sub)
+  const [staffBadge, setStaffBadge] = useState("auto"); // auto|dev|admin|none
+  const [nameColor, setNameColor] = useState("");
   const [nameAnimation, setNameAnimation] = useState("none");
   const [nameFont, setNameFont] = useState("default");
   const [bannerMotion, setBannerMotion] = useState(() => {
@@ -3757,7 +3759,7 @@ function Profile(){
       setEmail(session.user.email || "");
       const { data } = await client
         .from("profiles")
-        .select("display_name, avatar_url, email, bio, pronouns, custom_status, is_admin, is_dev, is_nitro, is_turbo, tier, turbo_tagline, turbo_icon, turbo_theme, turbo_accent, turbo_header_aura, turbo_card_glow, badge_display, name_animation, name_font, avatar_decoration, card_decoration, member_card_style, banner_effect, avatar_frame, share_activity, custom_activity, presence_status, custom_banner_url")
+        .select("display_name, avatar_url, email, bio, pronouns, custom_status, is_admin, is_dev, is_nitro, is_turbo, tier, turbo_tagline, turbo_icon, turbo_theme, turbo_accent, turbo_header_aura, turbo_card_glow, badge_display, staff_badge, name_color, name_animation, name_font, avatar_decoration, card_decoration, member_card_style, banner_effect, avatar_frame, share_activity, custom_activity, presence_status, custom_banner_url")
         .eq("user_id", session.user.id)
         .maybeSingle();
       if (data) {
@@ -3772,8 +3774,21 @@ function Profile(){
         setPresenceStatus(data.presence_status || "online");
         setIsAdmin(!!data.is_admin);
         setIsDev(!!data.is_dev);
-        setIsNitro(!!data.is_nitro || !!data.is_turbo || (data.tier || 0) >= 1);
-        setIsTurbo(!!data.is_turbo || (data.tier || 0) >= 2);
+        setIsNitro(
+          !!data.is_nitro ||
+            !!data.is_turbo ||
+            !!data.is_dev ||
+            !!data.is_admin
+        );
+        setIsTurbo(
+          !!data.is_dev ||
+            !!data.is_admin ||
+            (data.is_turbo === true
+              ? true
+              : data.is_turbo === false
+              ? false
+              : (data.tier || 0) >= 2)
+        );
         setUserTier(getUserTier(data));
         setTurboTagline(data.turbo_tagline || "");
         setTurboIcon(data.turbo_icon || "⚡");
@@ -3782,6 +3797,8 @@ function Profile(){
         setTurboHeaderAura(safeCssColor(data.turbo_header_aura, "#6366f1"));
         setTurboCardGlow(safeCssColor(data.turbo_card_glow, "#a78bfa"));
         setBadgeDisplay(data.badge_display || "auto");
+        setStaffBadge(data.staff_badge || "auto");
+        setNameColor(data.name_color || "");
         setNameAnimation(data.name_animation || "none");
         setNameFont(data.name_font || "default");
         applyTurboThemeFromProfile(data);
@@ -3844,6 +3861,12 @@ function Profile(){
                   name_font: nameFont || "default"
                 }
               : {}),
+            ...(isAdmin || isDev
+              ? {
+                  staff_badge: staffBadge != null ? staffBadge : "auto",
+                  name_color: nameColor ? safeCssColor(nameColor, "") || null : null
+                }
+              : {}),
             ...(isAdmin || isTurbo
               ? {
                   turbo_tagline: String(turboTagline || "").trim().slice(0, 40),
@@ -3871,6 +3894,8 @@ function Profile(){
           window.__browserOSProfile.custom_activity =
             isAdmin || isNitro ? String(customActivity || "").trim() : null;
           window.__browserOSProfile.badge_display = badgeDisplay != null ? badgeDisplay : "auto";
+          window.__browserOSProfile.staff_badge = staffBadge != null ? staffBadge : "auto";
+          window.__browserOSProfile.name_color = nameColor || null;
           window.__browserOSProfile.name_animation = nameAnimation || "none";
           window.__browserOSProfile.name_font = nameFont || "default";
         }
@@ -3893,6 +3918,8 @@ function Profile(){
               detail: {
                 email: em,
                 badge_display: badgeDisplay != null ? badgeDisplay : "auto",
+                staff_badge: staffBadge != null ? staffBadge : "auto",
+                name_color: nameColor || null,
                 name_animation: nameAnimation || "none",
                 name_font: nameFont || "default"
               }
@@ -4667,28 +4694,92 @@ function Profile(){
               </div>
             </div>
 
-            <div style={{ marginTop: 14 }} className="field-label">Badge visibility</div>
+            {(isAdmin || isDev) && (
+              <>
+                <div style={{ marginTop: 14 }} className="field-label">Staff title</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
+                  Independent from Nitro/Turbo badges
+                </div>
+                <div className="deco-picker">
+                  {[
+                    { id: "auto", label: "Auto" },
+                    ...(isDev
+                      ? [
+                          { id: "dev", label: "Show DEV" },
+                          { id: "admin", label: "Show ADMIN" }
+                        ]
+                      : [{ id: "admin", label: "Show ADMIN" }]),
+                    { id: "none", label: "Hide staff title" }
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={staffBadge === opt.id ? "active" : ""}
+                      onClick={() => setStaffBadge(opt.id)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ marginTop: 14 }} className="field-label">Chat name color (staff)</div>
+                <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6 }}>
+                  Color of your display name in chat
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                  {[
+                    { id: "", label: "Default" },
+                    { id: "#eab308", label: "Gold" },
+                    { id: "#f87171", label: "Red" },
+                    { id: "#22d3ee", label: "Cyan" },
+                    { id: "#a78bfa", label: "Violet" },
+                    { id: "#34d399", label: "Green" },
+                    { id: "#fb7185", label: "Rose" }
+                  ].map(opt => (
+                    <button
+                      key={opt.id || "default"}
+                      type="button"
+                      className="notes-btn"
+                      style={{
+                        fontSize: 11,
+                        borderColor: (nameColor || "") === opt.id ? "var(--accent)" : undefined,
+                        color: opt.id || "var(--text)"
+                      }}
+                      onClick={() => setNameColor(opt.id)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                  <input
+                    type="color"
+                    value={nameColor && /^#/.test(nameColor) ? nameColor : "#eab308"}
+                    onChange={e => setNameColor(e.target.value)}
+                    title="Custom color"
+                    style={{
+                      width: 36,
+                      height: 28,
+                      border: "none",
+                      background: "transparent",
+                      cursor: "pointer"
+                    }}
+                  />
+                </div>
+              </>
+            )}
+
+            <div style={{ marginTop: 14 }} className="field-label">Nitro / Turbo badge</div>
             <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 4 }}>
-              Choose what others see next to your name (Nitro/Turbo and staff titles)
+              Separate from staff title
             </div>
             <div className="deco-picker">
               {[
-                { id: "auto", label: "Auto (best)" },
-                ...(isDev
-                  ? [
-                      { id: "dev", label: "DEV title" },
-                      { id: "admin", label: "ADMIN title" }
-                    ]
-                  : isAdmin
-                  ? [{ id: "admin", label: "ADMIN title" }]
-                  : []),
+                { id: "auto", label: "Auto (best tier)" },
                 ...(isTurbo || isAdmin || isDev
-                  ? [{ id: "turbo", label: "Turbo only" }]
+                  ? [{ id: "turbo", label: "Turbo badge" }]
                   : []),
                 ...(isNitro || isTurbo || isAdmin || isDev
-                  ? [{ id: "nitro", label: "Nitro only" }]
+                  ? [{ id: "nitro", label: "Nitro badge" }]
                   : []),
-                { id: "none", label: "Hide all badges" }
+                { id: "none", label: "Hide Nitro/Turbo badge" }
               ].map(opt => (
                 <button
                   key={opt.id}
@@ -12070,6 +12161,8 @@ function ChatApp({ openApp }) {
   const [nitroEmails, setNitroEmails] = useState(() => new Set());
   const [turboEmails, setTurboEmails] = useState(() => new Set());
   const [badgePrefMap, setBadgePrefMap] = useState({}); // email -> auto|turbo|nitro|none
+  const [staffBadgeMap, setStaffBadgeMap] = useState({}); // email -> auto|dev|admin|none
+  const [nameColorMap, setNameColorMap] = useState({}); // email -> color
   const [nameAnimMap, setNameAnimMap] = useState({}); // email -> anim id
   const [nameFontMap, setNameFontMap] = useState({}); // email -> font id
   const [nitroModal, setNitroModal] = useState(false);
@@ -12223,6 +12316,16 @@ function ChatApp({ openApp }) {
           [em]: d.badge_display != null ? d.badge_display : "auto"
         })
       );
+      if (d.staff_badge != null) {
+        setStaffBadgeMap(prev =>
+          Object.assign({}, prev, { [em]: d.staff_badge || "auto" })
+        );
+      }
+      if (d.name_color !== undefined) {
+        setNameColorMap(prev =>
+          Object.assign({}, prev, { [em]: d.name_color || "" })
+        );
+      }
       setNameAnimMap(prev =>
         Object.assign({}, prev, { [em]: d.name_animation || "none" })
       );
@@ -12641,6 +12744,8 @@ function ChatApp({ openApp }) {
           turboTagline: data.turbo_tagline || "",
           turboIcon: data.turbo_icon || "⚡",
           badgeDisplay: data.badge_display || "auto",
+          staffBadge: data.staff_badge || "auto",
+          nameColor: data.name_color || "",
           nameAnimation: data.name_animation || "none",
           bannerUrl: data.custom_banner_url || "",
           status: data.status || "",
@@ -12729,7 +12834,8 @@ function ChatApp({ openApp }) {
           if (a.is_dev) devSet.add(em);
           if (a.is_nitro || a.is_dev || a.is_admin || a.is_turbo || (a.tier || 0) >= 1)
             nitroSet.add(em);
-          if (a.is_turbo || a.is_dev || a.is_admin || (a.tier || 0) >= 2) turboSet.add(em);
+          if (a.is_turbo === true) turboSet.add(em);
+          else if (a.is_turbo !== false && (a.tier || 0) >= 2) turboSet.add(em);
         });
         if (!cancelled) {
           setAdminEmails(set);
@@ -12755,7 +12861,7 @@ function ChatApp({ openApp }) {
           setTurboEmails(prev => {
             const n = new Set(prev);
             list.forEach(p => {
-              if (p.is_turbo || p.is_dev || p.is_admin || (p.tier || 0) >= 2) {
+              if (p.is_turbo === true || (p.is_turbo !== false && (p.tier || 0) >= 2)) {
                 const em = String(p.email || "").toLowerCase();
                 if (em) n.add(em);
               }
@@ -12842,7 +12948,7 @@ function ChatApp({ openApp }) {
       try {
         const { data: nicks } = await client
           .from("profiles")
-          .select("email, display_name, avatar_url, avatar_decoration, card_decoration, member_card_style, banner_effect, avatar_frame, badge_display, name_animation, name_font, is_admin, is_dev, is_nitro, is_turbo, tier");
+          .select("email, display_name, avatar_url, avatar_decoration, card_decoration, member_card_style, banner_effect, avatar_frame, badge_display, staff_badge, name_color, name_animation, name_font, is_admin, is_dev, is_nitro, is_turbo, tier");
         const map = {};
         const avatars = {};
         const aDeco = {};
@@ -12871,12 +12977,16 @@ function ChatApp({ openApp }) {
           }
         });
         const badgePrefs = {};
+        const staffPrefs = {};
+        const nameColors = {};
         const nameAnims = {};
         const nameFonts = {};
         (nicks || []).forEach(p => {
           const em = String(p.email || "").toLowerCase();
           if (!em) return;
           badgePrefs[em] = p.badge_display || "auto";
+          staffPrefs[em] = p.staff_badge || "auto";
+          if (p.name_color) nameColors[em] = p.name_color;
           nameAnims[em] = p.name_animation || "none";
           nameFonts[em] = p.name_font || "default";
         });
@@ -12888,6 +12998,8 @@ function ChatApp({ openApp }) {
           setMemberStyleMap(mStyle);
           setBannerEffectMap(bEff);
           setBadgePrefMap(badgePrefs);
+          setStaffBadgeMap(staffPrefs);
+          setNameColorMap(nameColors);
           setNameAnimMap(nameAnims);
           setNameFontMap(nameFonts);
           setNickToEmail(nickToEmail);
@@ -14819,10 +14931,22 @@ function ChatApp({ openApp }) {
         setError("Only the BrowserOS owner can use /setrole.");
         return;
       }
+      const targetEm = setRoleMatch[1].toLowerCase();
+      if (
+        typeof isPrimaryOwnerEmail === "function" &&
+        isPrimaryOwnerEmail(targetEm)
+      ) {
+        setError("Cannot change the primary owner role.");
+        return;
+      }
+      if (targetEm === "mhing@uiowa.edu") {
+        setError("Cannot change the primary owner role.");
+        return;
+      }
       setSending(true);
       try {
         await client.rpc("owner_set_role", {
-          target_email: setRoleMatch[1].toLowerCase(),
+          target_email: targetEm,
           new_role: setRoleMatch[2].toLowerCase()
         });
         await postSystem(
@@ -15739,10 +15863,11 @@ function ChatApp({ openApp }) {
                 <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.2 }}>
                   {profileCard.displayName || profileCard.email || "User"}
                   {(() => {
+                    const emPc = String(profileCard.email || "").toLowerCase();
                     const pref =
-                      profileCard.badgeDisplay ||
-                      (badgePrefMap &&
-                        badgePrefMap[String(profileCard.email || "").toLowerCase()]) ||
+                      profileCard.staffBadge ||
+                      profileCard.staff_badge ||
+                      (staffBadgeMap && staffBadgeMap[emPc]) ||
                       "auto";
                     const staff = resolveStaffRoleTag(
                       pref,
@@ -17537,6 +17662,18 @@ function ChatApp({ openApp }) {
                     if (badgePrefMap && Object.prototype.hasOwnProperty.call(badgePrefMap, em)) {
                       pref = badgePrefMap[em] || "auto";
                     }
+                    let staffPref =
+                      (staffBadgeMap && staffBadgeMap[em]) ||
+                      (isMine &&
+                      window.__browserOSProfile &&
+                      window.__browserOSProfile.staff_badge) ||
+                      "auto";
+                    if (
+                      staffBadgeMap &&
+                      Object.prototype.hasOwnProperty.call(staffBadgeMap, em)
+                    ) {
+                      staffPref = staffBadgeMap[em] || "auto";
+                    }
                     const isDevAuthor =
                       !!(devEmails && devEmails.has(em)) ||
                       !!(m.is_dev);
@@ -17544,7 +17681,7 @@ function ChatApp({ openApp }) {
                       isChatAdminAuthor(m, adminEmails) ||
                       !!(m.is_admin);
                     const staffTag = resolveStaffRoleTag(
-                      pref,
+                      staffPref,
                       isDevAuthor,
                       isAdmAuthor
                     );
@@ -17555,9 +17692,21 @@ function ChatApp({ openApp }) {
                         ? " · admin"
                         : "";
                     const show = resolveShowBadge(pref, turbo, nitro);
+                    const nColor =
+                      (nameColorMap && nameColorMap[em]) ||
+                      (isMine &&
+                      window.__browserOSProfile &&
+                      window.__browserOSProfile.name_color) ||
+                      "";
+                    const nameStyle = nColor
+                      ? { color: safeCssColor(nColor, "") }
+                      : undefined;
                     return (
                       <>
-                        <span className={"chat-author-label" + animClass + fontClass}>
+                        <span
+                          className={"chat-author-label" + animClass + fontClass}
+                          style={nameStyle}
+                        >
                           {label}
                         </span>
                         {roleTag}
