@@ -21223,20 +21223,173 @@ function PlanGateScreen({ profile, onActivated, onSignOut }) {
 }
 
 function AuthScreen({ onUnlock, onPending, revokeMessage }) {
-  const [mode, setMode] = useState("signin"); // signin | register | reset
+  const [mode, setMode] = useState("signin"); // signin | register | reset | verify
   const [resetSent, setResetSent] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
+  const [verifyCode, setVerifyCode] = useState("");
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [otpExpiresAt, setOtpExpiresAt] = useState(0);
+  const [otpTick, setOtpTick] = useState(0);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
   const emailRef = useRef(null);
+  const codeRef = useRef(null);
+  const OTP_TTL_MS = 2 * 60 * 1000;
 
   useEffect(() => {
-    emailRef.current?.focus();
+    if (mode === "verify") {
+      try { codeRef.current && codeRef.current.focus(); } catch (_) {}
+    } else {
+      try { emailRef.current && emailRef.current.focus(); } catch (_) {}
+    }
   }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "verify" || !otpExpiresAt) return undefined;
+    const id = setInterval(() => setOtpTick(t => t + 1), 500);
+    return () => clearInterval(id);
+  }, [mode, otpExpiresAt]);
+
+  const otpSecondsLeft = !otpExpiresAt
+    ? 0
+    : Math.max(0, Math.ceil((otpExpiresAt - Date.now()) / 1000));
+
+  const startVerifyFlow = addr => {
+    setVerifyEmail(String(addr || "").toLowerCase());
+    setVerifyCode("");
+    setOtpExpiresAt(Date.now() + OTP_TTL_MS);
+    setMode("verify");
+    setInfo(
+      "We sent a verification code to your email. Enter it below within 2 minutes."
+    );
+    setError("");
+  };
+
+  const resendVerificationCode = async () => {
+    if (busy) return;
+    const addr = (verifyEmail || email).trim().toLowerCase();
+    if (!addr) {
+      setError("Missing email for resend.");
+      return;
+    }
+    const client = getSupabaseClient();
+    if (!client) {
+      setError("Supabase client failed to load.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      let rErr = null;
+      const r1 = await client.auth.resend({ type: "signup", email: addr });
+      rErr = r1.error;
+      if (rErr) {
+        const r2 = await client.auth.resend({ type: "email", email: addr });
+        if (r2.error) {
+          setError(rErr.message || r2.error.message || "Could not resend code.");
+          setBusy(false);
+          return;
+        }
+      }
+      setOtpExpiresAt(Date.now() + OTP_TTL_MS);
+      setVerifyCode("");
+      setInfo("A new verification code was sent. It expires in 2 minutes.");
+    } catch (err) {
+      setError((err && err.message) || "Could not resend code.");
+    }
+    setBusy(false);
+  };
+
+  const submitVerificationCode = async () => {
+    if (busy) return;
+    const addr = (verifyEmail || email).trim().toLowerCase();
+    const token = String(verifyCode || "").trim().replace(/\s+/g, "");
+    if (!addr) {
+      setError("Missing email.");
+      return;
+    }
+    if (!token || token.length < 4) {
+      setError("Enter the verification code from your email.");
+      return;
+    }
+    if (otpExpiresAt && Date.now() > otpExpiresAt) {
+      setError("This code has expired. Tap Resend code for a new one.");
+      return;
+    }
+    const client = getSupabaseClient();
+    if (!client) {
+      setError("Supabase client failed to load.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    setInfo("");
+    try {
+      let data = null;
+      let vErr = null;
+      const tryTypes = ["signup", "email"];
+      for (let i = 0; i < tryTypes.length; i++) {
+        const res = await client.auth.verifyOtp({
+          email: addr,
+          token: token,
+          type: tryTypes[i]
+        });
+        if (!res.error && res.data && res.data.session) {
+          data = res.data;
+          vErr = null;
+          break;
+        }
+        vErr = res.error;
+      }
+      if (vErr || !data || !data.session) {
+        const msg = (vErr && vErr.message) || "Invalid or expired code.";
+        setError(
+          /expired|otp/i.test(msg)
+            ? "Code expired or invalid. Request a new code."
+            : msg
+        );
+        setBusy(false);
+        return;
+      }
+      let profile;
+      try {
+        profile = await ensureUserProfile(
+          client,
+          data.user || data.session.user
+        );
+      } catch (err) {
+        setError(
+          (err && err.message) ||
+            "Verified, but profile setup failed. Contact an admin."
+        );
+        setBusy(false);
+        return;
+      }
+      setVerifyCode("");
+      setPassword("");
+      setPassword2("");
+      setBusy(false);
+      if (profile._accessExpired) {
+        setError(
+          "Your BrowserOS access period has expired. Please contact an Admin or Developer."
+        );
+        await client.auth.signOut({ scope: "local" }).catch(() => {});
+        return;
+      }
+      if (profile.status === "approved" || profile.is_admin || profile.is_dev) {
+        onUnlock(data.session, profile);
+      } else {
+        onPending(profile);
+      }
+    } catch (err) {
+      setError((err && err.message) || "Verification failed.");
+      setBusy(false);
+    }
+  };
 
   // Handle Supabase recovery link (type=recovery in URL hash/query)
   useEffect(() => {
@@ -21294,6 +21447,10 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
       await updateRecoveredPassword();
       return;
     }
+    if (mode === "verify") {
+      await submitVerificationCode();
+      return;
+    }
     setBusy(true);
 
     try {
@@ -21329,53 +21486,19 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
           return;
         }
 
-        // Prefer server trigger to create profiles; also try client-side when session exists
-        if (data.user && data.session) {
+        // Email OTP verification required (Confirm email must be ON in Supabase)
+        if (data.session) {
           try {
-            await ensureUserProfile(client, data.user);
-          } catch (_) {
-            /* trigger may have created it */
-          }
+            await client.auth.signOut({ scope: "local" });
+          } catch (_) {}
+          try {
+            await client.auth.resend({ type: "signup", email: trimmed });
+          } catch (_) {}
         }
 
-        // If email confirmation is required, session may be null — profile
-        // should still be created by the auth.users trigger in Supabase.
-        if (!data.session) {
-          setInfo(
-            "Registration submitted. Confirm your email if required, then wait for an admin to approve you. (If you never appear in Admin, run the profiles trigger SQL.)"
-          );
-          setMode("signin");
-          setPassword("");
-          setPassword2("");
-          return;
-        }
-
-        let profile;
-        try {
-          profile = await ensureUserProfile(client, data.user);
-        } catch (err) {
-          setError(
-            (err && err.message) ||
-              "Account created but profile setup failed. Run the profiles SQL + trigger in Supabase."
-          );
-          await client.auth.signOut({ scope: "local" }).catch(() => {});
-          return;
-        }
-
+        startVerifyFlow(trimmed);
         setPassword("");
         setPassword2("");
-        if (profile._accessExpired) {
-          setError(
-            "Your BrowserOS access period has expired. Please contact an Admin or Developer to extend your trial."
-          );
-          await client.auth.signOut({ scope: "local" }).catch(() => {});
-          return;
-        }
-        if (profile.status === "approved" || profile.is_admin || profile.is_dev) {
-          onUnlock(data.session, profile);
-        } else {
-          onPending(profile);
-        }
         return;
       }
 
@@ -21474,7 +21597,9 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
       <form className="auth-card" onSubmit={submit}>
         <div className="auth-logo">BrowserOS</div>
         <div className="auth-sub">
-          {mode === "signin"
+          {mode === "verify"
+            ? "Verify your email"
+            : mode === "signin"
             ? "Sign in to continue"
             : mode === "reset"
             ? "Reset your password"
@@ -21486,129 +21611,242 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-          <button
-            type="button"
-            className="notes-btn"
-            style={{
-              opacity: mode === "signin" ? 1 : 0.55,
-              borderColor: mode === "signin" ? "var(--accent)" : undefined
-            }}
-            onClick={() => {
-              setMode("signin");
-              setError("");
-              setInfo("");
-            }}
-          >
-            Sign in
-          </button>
-          <button
-            type="button"
-            className="notes-btn"
-            style={{
-              opacity: mode === "register" ? 1 : 0.55,
-              borderColor: mode === "register" ? "var(--accent)" : undefined
-            }}
-            onClick={() => {
-              setMode("register");
-              setError("");
-              setInfo("");
-              setResetSent(false);
-            }}
-          >
-            Register
-          </button>
-          <button
-            type="button"
-            className="notes-btn"
-            style={{
-              opacity: mode === "reset" ? 1 : 0.55,
-              borderColor: mode === "reset" ? "var(--accent)" : undefined
-            }}
-            onClick={() => {
-              setMode("reset");
-              setError("");
-              setInfo("");
-              setResetSent(false);
-              setPassword("");
-              setPassword2("");
-            }}
-          >
-            Reset
-          </button>
-        </div>
-
-        <div className="auth-label">Email</div>
-        <input
-          ref={emailRef}
-          className="auth-input"
-          type="email"
-          autoComplete="username"
-          value={email}
-          onChange={e => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          disabled={busy}
-          style={{ marginBottom: 12 }}
-        />
-
-        {(mode !== "reset" || recoveryMode) && (
-          <>
-        <div className="auth-label">{recoveryMode ? "New password" : "Password"}</div>
-        <input
-          className="auth-input"
-          type="password"
-          autoComplete={mode === "register" || recoveryMode ? "new-password" : "current-password"}
-          value={password}
-          onChange={e => setPassword(e.target.value)}
-          placeholder={recoveryMode ? "New password" : "Password"}
-          disabled={busy}
-          style={{ marginBottom: mode === "register" || recoveryMode ? 12 : 0 }}
-        />
-          </>
+        {mode !== "verify" && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+            <button
+              type="button"
+              className="notes-btn"
+              style={{
+                opacity: mode === "signin" ? 1 : 0.55,
+                borderColor: mode === "signin" ? "var(--accent)" : undefined
+              }}
+              onClick={() => {
+                setMode("signin");
+                setError("");
+                setInfo("");
+              }}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              className="notes-btn"
+              style={{
+                opacity: mode === "register" ? 1 : 0.55,
+                borderColor: mode === "register" ? "var(--accent)" : undefined
+              }}
+              onClick={() => {
+                setMode("register");
+                setError("");
+                setInfo("");
+                setResetSent(false);
+              }}
+            >
+              Register
+            </button>
+            <button
+              type="button"
+              className="notes-btn"
+              style={{
+                opacity: mode === "reset" ? 1 : 0.55,
+                borderColor: mode === "reset" ? "var(--accent)" : undefined
+              }}
+              onClick={() => {
+                setMode("reset");
+                setError("");
+                setInfo("");
+                setResetSent(false);
+                setPassword("");
+                setPassword2("");
+              }}
+            >
+              Reset
+            </button>
+          </div>
         )}
 
-        {(mode === "register" || recoveryMode) && (
+        {mode === "verify" ? (
           <>
-            <div className="auth-label">Confirm password</div>
+            <div
+              style={{
+                fontSize: 13,
+                color: "var(--text-muted)",
+                marginBottom: 12,
+                lineHeight: 1.5
+              }}
+            >
+              Enter the code sent to{" "}
+              <strong style={{ color: "var(--text)" }}>
+                {verifyEmail || email}
+              </strong>
+              . Codes expire in about 2 minutes.
+            </div>
+            <div className="auth-label">Verification code</div>
             <input
+              ref={codeRef}
               className="auth-input"
-              type="password"
-              autoComplete="new-password"
-              value={password2}
-              onChange={e => setPassword2(e.target.value)}
-              placeholder="Confirm password"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              value={verifyCode}
+              onChange={e =>
+                setVerifyCode(e.target.value.replace(/[^\d]/g, "").slice(0, 8))
+              }
+              placeholder="6-digit code"
               disabled={busy}
+              style={{
+                marginBottom: 10,
+                letterSpacing: "0.2em",
+                fontWeight: 700,
+                fontSize: 18,
+                textAlign: "center"
+              }}
             />
+            <div
+              style={{
+                fontSize: 12,
+                color: otpSecondsLeft > 0 ? "var(--text-muted)" : "var(--danger)",
+                marginBottom: 12
+              }}
+            >
+              {otpSecondsLeft > 0
+                ? "Code expires in " +
+                  Math.floor(otpSecondsLeft / 60) +
+                  ":" +
+                  String(otpSecondsLeft % 60).padStart(2, "0")
+                : "Code expired — request a new one"}
+            </div>
+            <button
+              className="auth-btn"
+              type="submit"
+              disabled={busy || !String(verifyCode || "").trim()}
+            >
+              {busy ? "Verifying…" : "Verify email"}
+            </button>
+            <button
+              type="button"
+              className="notes-btn"
+              style={{ width: "100%", marginTop: 10, fontWeight: 700 }}
+              disabled={busy || otpSecondsLeft > 0}
+              onClick={resendVerificationCode}
+            >
+              {otpSecondsLeft > 0
+                ? "Resend available in " + otpSecondsLeft + "s"
+                : "Resend code"}
+            </button>
+            <button
+              type="button"
+              className="notes-btn"
+              style={{ width: "100%", marginTop: 8 }}
+              disabled={busy}
+              onClick={() => {
+                setMode("signin");
+                setVerifyCode("");
+                setError("");
+                setInfo("");
+              }}
+            >
+              Back to sign in
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="auth-label">Email</div>
+            <input
+              ref={emailRef}
+              className="auth-input"
+              type="email"
+              autoComplete="username"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              disabled={busy}
+              style={{ marginBottom: 12 }}
+            />
+
+            {(mode !== "reset" || recoveryMode) && (
+              <>
+                <div className="auth-label">
+                  {recoveryMode ? "New password" : "Password"}
+                </div>
+                <input
+                  className="auth-input"
+                  type="password"
+                  autoComplete={
+                    mode === "register" || recoveryMode
+                      ? "new-password"
+                      : "current-password"
+                  }
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder={recoveryMode ? "New password" : "Password"}
+                  disabled={busy}
+                  style={{
+                    marginBottom:
+                      mode === "register" || recoveryMode ? 12 : 0
+                  }}
+                />
+              </>
+            )}
+
+            {(mode === "register" || recoveryMode) && (
+              <>
+                <div className="auth-label">Confirm password</div>
+                <input
+                  className="auth-input"
+                  type="password"
+                  autoComplete="new-password"
+                  value={password2}
+                  onChange={e => setPassword2(e.target.value)}
+                  placeholder="Confirm password"
+                  disabled={busy}
+                />
+              </>
+            )}
+
+            <button
+              className="auth-btn"
+              type="submit"
+              disabled={
+                busy ||
+                !email.trim() ||
+                (mode !== "reset" && !password) ||
+                (mode === "register" && !password2)
+              }
+            >
+              {busy
+                ? mode === "register"
+                  ? "Submitting…"
+                  : mode === "reset"
+                  ? "Sending…"
+                  : "Signing in…"
+                : mode === "register"
+                ? "Request access"
+                : mode === "reset"
+                ? "Send reset link"
+                : "Sign in"}
+            </button>
           </>
         )}
 
-        <button
-          className="auth-btn"
-          type="submit"
-          disabled={
-            busy ||
-            !email.trim() ||
-            !password ||
-            (mode === "register" && !password2)
-          }
-        >
-          {busy
-            ? mode === "register"
-              ? "Submitting…"
-              : "Signing in…"
-            : mode === "register"
-              ? "Request access"
-              : "Sign in"}
-        </button>
         {error && <div className="auth-error">{error}</div>}
         {info && (
-          <div style={{ marginTop: 12, fontSize: 12, color: "var(--accent)", lineHeight: 1.45 }}>
+          <div
+            style={{
+              marginTop: 12,
+              fontSize: 12,
+              color: "var(--accent)",
+              lineHeight: 1.45
+            }}
+          >
             {info}
           </div>
         )}
         <div className="auth-hint">
-          {mode === "register"
-            ? "New accounts stay pending until an admin approves them."
+          {mode === "verify"
+            ? "Check spam/junk if you do not see the email. Use Resend after the timer ends."
+            : mode === "register"
+            ? "You will verify your email with a code, then wait for admin approval."
             : "Approved accounts only. New here? Use Register."}
         </div>
       </form>
