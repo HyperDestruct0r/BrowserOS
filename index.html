@@ -2459,6 +2459,77 @@ html:not(.banner-motion-on) .profile-card-shell.deco-prism{
   padding:4px;border-radius:6px;line-height:1.2;
 }
 .chat-react-grid button:hover{background:var(--surface2)}
+
+/* ── OFFLINE DINO (Chrome-style) ── */
+.offline-dino-screen{
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  background:#f7f7f7;
+  color:#535353;
+  font-family: "Courier New", Courier, monospace;
+  padding:16px;
+  user-select:none;
+}
+.offline-dino-screen.night{
+  background:#1a1a1a;
+  color:#e0e0e0;
+}
+.offline-dino-title{
+  font-size:14px;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  margin-bottom:8px;
+  opacity:0.85;
+}
+.offline-dino-hint{
+  font-size:12px;
+  margin-top:12px;
+  opacity:0.7;
+  text-align:center;
+  max-width:420px;
+  line-height:1.45;
+}
+.offline-dino-canvas{
+  display:block;
+  width:min(100%, 700px);
+  height:auto;
+  border:1px solid #dadce0;
+  background:#f7f7f7;
+  image-rendering: pixelated;
+}
+.offline-dino-screen.night .offline-dino-canvas{
+  border-color:#333;
+  background:#1a1a1a;
+}
+.offline-dino-bar{
+  display:flex;
+  gap:16px;
+  margin-top:10px;
+  font-size:13px;
+  font-weight:700;
+}
+.offline-dino-online-btn{
+  margin-top:16px;
+  padding:8px 14px;
+  border-radius:8px;
+  border:1px solid #dadce0;
+  background:#fff;
+  color:#202124;
+  font-family:inherit;
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+}
+.offline-dino-screen.night .offline-dino-online-btn{
+  background:#2a2a2a;
+  border-color:#444;
+  color:#eee;
+}
+
 </style>
 
 
@@ -2510,6 +2581,9 @@ try {
       console.error("BrowserOS rejection", e.reason);
     }
   });
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    setBoot("No internet — loading offline arcade…");
+  }
   setTimeout(function () {
     var boot = document.querySelector(".os-boot-screen");
     if (boot && document.body.contains(boot)) {
@@ -22905,6 +22979,331 @@ function AdminApprovalsApp() {
   );
 }
 
+
+/** Chrome-style offline dinosaur runner — shown when BrowserOS has no network. */
+function OfflineDinoGame({ onOnline }) {
+  const canvasRef = useRef(null);
+  const [score, setScore] = useState(0);
+  const [hi, setHi] = useState(() => {
+    try {
+      return parseInt(localStorage.getItem("browserOS_dino_hi") || "0", 10) || 0;
+    } catch (_) {
+      return 0;
+    }
+  });
+  const [night, setNight] = useState(false);
+  const [status, setStatus] = useState("Press Space or tap to start");
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const W = 700;
+    const H = 200;
+    canvas.width = W;
+    canvas.height = H;
+
+    const groundY = 160;
+    let dino = { x: 48, y: groundY, vy: 0, w: 44, h: 48, duck: false, onGround: true };
+    let obstacles = [];
+    let clouds = [
+      { x: 120, y: 40, s: 1 },
+      { x: 360, y: 28, s: 0.8 },
+      { x: 560, y: 50, s: 1.1 }
+    ];
+    let speed = 6;
+    let frame = 0;
+    let running = false;
+    let dead = false;
+    let sc = 0;
+    let spawnTimer = 0;
+    let raf = 0;
+    let groundOffset = 0;
+
+    const gravity = 0.7;
+    const jumpV = -12;
+
+    function reset() {
+      dino = { x: 48, y: groundY, vy: 0, w: 44, h: 48, duck: false, onGround: true };
+      obstacles = [];
+      speed = 6;
+      frame = 0;
+      running = true;
+      dead = false;
+      sc = 0;
+      spawnTimer = 60;
+      setStatus("Running — Space/↑ jump · ↓ duck");
+      setScore(0);
+      setNight(false);
+    }
+
+    function spawnObstacle() {
+      const roll = Math.random();
+      if (sc > 400 && roll > 0.65) {
+        // pterodactyl
+        obstacles.push({
+          type: "bird",
+          x: W + 20,
+          y: groundY - (Math.random() > 0.5 ? 55 : 20),
+          w: 42,
+          h: 28
+        });
+      } else {
+        const tall = Math.random() > 0.55;
+        const pair = Math.random() > 0.75;
+        const h = tall ? 48 : 32;
+        const w = tall ? 18 : 14;
+        obstacles.push({ type: "cactus", x: W + 10, y: groundY - h + 48, w, h });
+        if (pair) {
+          obstacles.push({
+            type: "cactus",
+            x: W + 28,
+            y: groundY - 32 + 48,
+            w: 14,
+            h: 32
+          });
+        }
+      }
+    }
+
+    function hitTest() {
+      const pad = 6;
+      const dy = dino.duck ? 20 : 0;
+      const dh = dino.duck ? dino.h - 18 : dino.h;
+      const box = {
+        x: dino.x + pad,
+        y: dino.y - dh + dy + pad,
+        w: dino.w - pad * 2,
+        h: dh - pad * 2
+      };
+      for (let i = 0; i < obstacles.length; i++) {
+        const o = obstacles[i];
+        if (
+          box.x < o.x + o.w - 4 &&
+          box.x + box.w > o.x + 4 &&
+          box.y < o.y + o.h - 4 &&
+          box.y + box.h > o.y + 4
+        ) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function drawDino() {
+      ctx.fillStyle = nightMode() ? "#e0e0e0" : "#535353";
+      const duck = dino.duck && dino.onGround;
+      const feet = Math.floor(frame / 6) % 2;
+      if (duck) {
+        ctx.fillRect(dino.x, dino.y - 22, 52, 22);
+        ctx.fillRect(dino.x + 40, dino.y - 30, 14, 10);
+      } else {
+        ctx.fillRect(dino.x + 8, dino.y - 40, 28, 30);
+        ctx.fillRect(dino.x + 28, dino.y - 52, 18, 16);
+        ctx.fillRect(dino.x + 36, dino.y - 48, 4, 4);
+        if (dino.onGround) {
+          if (feet === 0) {
+            ctx.fillRect(dino.x + 12, dino.y - 10, 8, 10);
+            ctx.fillRect(dino.x + 26, dino.y - 10, 8, 10);
+          } else {
+            ctx.fillRect(dino.x + 10, dino.y - 10, 8, 10);
+            ctx.fillRect(dino.x + 28, dino.y - 10, 8, 10);
+          }
+        } else {
+          ctx.fillRect(dino.x + 12, dino.y - 14, 8, 12);
+          ctx.fillRect(dino.x + 26, dino.y - 14, 8, 12);
+        }
+        ctx.fillRect(dino.x + 4, dino.y - 34, 8, 6);
+      }
+    }
+
+    function nightMode() {
+      return sc >= 700 && Math.floor(sc / 700) % 2 === 1;
+    }
+
+    function draw() {
+      const nm = nightMode();
+      ctx.fillStyle = nm ? "#1a1a1a" : "#f7f7f7";
+      ctx.fillRect(0, 0, W, H);
+
+      // clouds
+      ctx.fillStyle = nm ? "#3a3a3a" : "#dadce0";
+      clouds.forEach(c => {
+        ctx.fillRect(c.x, c.y, 46 * c.s, 14 * c.s);
+        ctx.fillRect(c.x + 12 * c.s, c.y - 8 * c.s, 28 * c.s, 12 * c.s);
+      });
+
+      // ground
+      ctx.strokeStyle = nm ? "#666" : "#535353";
+      ctx.beginPath();
+      ctx.moveTo(0, groundY + 8);
+      ctx.lineTo(W, groundY + 8);
+      ctx.stroke();
+      ctx.fillStyle = nm ? "#666" : "#535353";
+      for (let x = -((groundOffset | 0) % 24); x < W; x += 24) {
+        ctx.fillRect(x, groundY + 10, 12, 2);
+      }
+
+      // obstacles
+      obstacles.forEach(o => {
+        ctx.fillStyle = nm ? "#e0e0e0" : "#535353";
+        if (o.type === "bird") {
+          const flap = Math.floor(frame / 8) % 2;
+          ctx.fillRect(o.x, o.y + 8, 36, 10);
+          ctx.fillRect(o.x + 8, o.y + (flap ? 0 : 14), 16, 10);
+        } else {
+          ctx.fillRect(o.x, o.y, o.w, o.h);
+          ctx.fillRect(o.x - 4, o.y + 10, o.w + 8, 6);
+        }
+      });
+
+      drawDino();
+
+      // score on canvas
+      ctx.fillStyle = nm ? "#e0e0e0" : "#535353";
+      ctx.font = "bold 14px Courier New, monospace";
+      ctx.textAlign = "right";
+      ctx.fillText(String(Math.floor(sc)).padStart(5, "0"), W - 12, 24);
+      if (hi > 0) {
+        ctx.fillText("HI " + String(hi).padStart(5, "0"), W - 12, 42);
+      }
+
+      if (dead) {
+        ctx.textAlign = "center";
+        ctx.font = "bold 18px Courier New, monospace";
+        ctx.fillText("G A M E  O V E R", W / 2, 80);
+        ctx.font = "12px Courier New, monospace";
+        ctx.fillText("Press Space or tap to restart", W / 2, 104);
+      } else if (!running) {
+        ctx.textAlign = "center";
+        ctx.font = "12px Courier New, monospace";
+        ctx.fillText("Press Space or tap to start", W / 2, 90);
+      }
+    }
+
+    function tick() {
+      frame++;
+      const nm = nightMode();
+      if (nm !== night) setNight(nm);
+
+      if (running && !dead) {
+        groundOffset += speed;
+        clouds.forEach(c => {
+          c.x -= speed * 0.15 * c.s;
+          if (c.x < -60) c.x = W + Math.random() * 100;
+        });
+
+        dino.vy += gravity;
+        dino.y += dino.vy;
+        if (dino.y >= groundY) {
+          dino.y = groundY;
+          dino.vy = 0;
+          dino.onGround = true;
+        } else {
+          dino.onGround = false;
+        }
+
+        spawnTimer--;
+        if (spawnTimer <= 0) {
+          spawnObstacle();
+          spawnTimer = 50 + Math.random() * 70 - Math.min(30, sc / 50);
+        }
+
+        obstacles.forEach(o => {
+          o.x -= speed;
+        });
+        obstacles = obstacles.filter(o => o.x + o.w > -20);
+
+        sc += 0.15;
+        if (Math.floor(sc) !== Math.floor(sc - 0.15)) {
+          setScore(Math.floor(sc));
+        }
+        if (frame % 120 === 0) speed = Math.min(13, speed + 0.15);
+
+        if (hitTest()) {
+          dead = true;
+          running = false;
+          setStatus("Game over — Space or tap to restart");
+          const final = Math.floor(sc);
+          setScore(final);
+          if (final > hi) {
+            setHi(final);
+            try {
+              localStorage.setItem("browserOS_dino_hi", String(final));
+            } catch (_) {}
+          }
+        }
+      }
+
+      draw();
+      raf = requestAnimationFrame(tick);
+    }
+
+    function jump() {
+      if (dead || !running) {
+        reset();
+        return;
+      }
+      if (dino.onGround) {
+        dino.vy = jumpV;
+        dino.onGround = false;
+        dino.duck = false;
+      }
+    }
+
+    function onKey(e) {
+      if (e.code === "Space" || e.code === "ArrowUp") {
+        e.preventDefault();
+        jump();
+      } else if (e.code === "ArrowDown") {
+        e.preventDefault();
+        if (running && !dead) dino.duck = true;
+      }
+    }
+    function onKeyUp(e) {
+      if (e.code === "ArrowDown") dino.duck = false;
+    }
+    function onPointer() {
+      jump();
+    }
+
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("keyup", onKeyUp);
+    canvas.addEventListener("pointerdown", onPointer);
+    raf = requestAnimationFrame(tick);
+    draw();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("keyup", onKeyUp);
+      canvas.removeEventListener("pointerdown", onPointer);
+    };
+  }, []);
+
+  return (
+    <div className={"offline-dino-screen" + (night ? " night" : "")}>
+      <div className="offline-dino-title">BrowserOS · Offline</div>
+      <canvas ref={canvasRef} className="offline-dino-canvas" width={700} height={200} />
+      <div className="offline-dino-bar">
+        <span>Score {score}</span>
+        <span>HI {hi}</span>
+      </div>
+      <div className="offline-dino-hint">
+        No internet connection. Play the desert runner until you&apos;re back online.
+        <br />
+        {status}
+      </div>
+      {typeof onOnline === "function" && (
+        <button type="button" className="offline-dino-online-btn" onClick={onOnline}>
+          I&apos;m online — continue to BrowserOS
+        </button>
+      )}
+    </div>
+  );
+}
+
+
 function Root() {
   const [unlocked, setUnlocked] = useState(false);
   const [rejectedProfile, setRejectedProfile] = useState(null);
@@ -22917,6 +23316,24 @@ function Root() {
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [accessExpired, setAccessExpired] = useState(false);
   const [needsActivation, setNeedsActivation] = useState(null); // profile waiting for plan/code
+  const [offlineMode, setOfflineMode] = useState(() => {
+    try {
+      return typeof navigator !== "undefined" && navigator.onLine === false;
+    } catch (_) {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    const goOff = () => setOfflineMode(true);
+    const goOn = () => setOfflineMode(false);
+    window.addEventListener("offline", goOff);
+    window.addEventListener("online", goOn);
+    return () => {
+      window.removeEventListener("offline", goOff);
+      window.removeEventListener("online", goOn);
+    };
+  }, []);
 
   useEffect(() => {
     const client = getSupabaseClient();
@@ -23156,6 +23573,21 @@ function Root() {
     window.addEventListener("browseros-tamper-ban", onTamper);
     return () => window.removeEventListener("browseros-tamper-ban", onTamper);
   }, []);
+
+  if (offlineMode) {
+    return (
+      <OfflineDinoGame
+        onOnline={() => {
+          try {
+            if (typeof navigator !== "undefined" && navigator.onLine === false) {
+              return;
+            }
+          } catch (_) {}
+          setOfflineMode(false);
+        }}
+      />
+    );
+  }
 
   if (rejectedProfile) {
     return (
