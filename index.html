@@ -8118,6 +8118,103 @@ function SessionSave() {
   );
 }
 
+
+function SettingsGetNitroButtons() {
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  const requestTier = async (tier) => {
+    setBusy(true);
+    setMsg("");
+    setErr("");
+    try {
+      const client = typeof getSupabaseClient === "function" ? getSupabaseClient() : null;
+      if (!client) {
+        setErr("Sign in required.");
+        setBusy(false);
+        return;
+      }
+      const { data: sessionData } = await client.auth.getSession();
+      const session = sessionData && sessionData.session;
+      if (!session) {
+        setErr("Sign in required.");
+        setBusy(false);
+        return;
+      }
+      const email = (session.user.email || "").toLowerCase();
+      const { error } = await client.from("subscription_requests").insert({
+        user_id: session.user.id,
+        email,
+        requested_tier: tier === "turbo" ? "turbo" : "nitro",
+        status: "pending",
+        note: tier === "turbo" ? "Requested Turbo from Settings" : "Requested Nitro from Settings"
+      });
+      if (error) {
+        // Fallback columns if schema differs
+        if (/requested_tier|column/i.test(error.message || "")) {
+          const { error: e2 } = await client.from("subscription_requests").insert({
+            user_id: session.user.id,
+            email,
+            plan: tier === "turbo" ? "turbo" : "nitro",
+            status: "pending"
+          });
+          if (e2) throw e2;
+        } else {
+          throw error;
+        }
+      }
+      setMsg(
+        tier === "turbo"
+          ? "Turbo request sent. An admin will approve it in the Admin console."
+          : "Nitro request sent. An admin will approve it in the Admin console."
+      );
+    } catch (e) {
+      setErr((e && e.message) || "Could not send request. Ask an admin in person if this fails.");
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <button
+        type="button"
+        className="notes-btn"
+        disabled={busy}
+        style={{
+          fontWeight: 800,
+          background: "linear-gradient(90deg,#f59e0b,#facc15)",
+          color: "#1c1917",
+          border: "none",
+          padding: "12px 14px"
+        }}
+        onClick={() => requestTier("nitro")}
+      >
+        {busy ? "Sending…" : "🚀 Get Nitro"}
+      </button>
+      <button
+        type="button"
+        className="notes-btn"
+        disabled={busy}
+        style={{ fontWeight: 700, fontSize: 12 }}
+        onClick={() => requestTier("turbo")}
+      >
+        ⚡ Request Turbo
+      </button>
+      {msg && (
+        <div style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600 }}>{msg}</div>
+      )}
+      {err && (
+        <div style={{ fontSize: 12, color: "var(--danger)", fontWeight: 600 }}>{err}</div>
+      )}
+      <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
+        Nitro ≈ $0.99/mo · Turbo ≈ $1.99/mo (preview pricing). Admins grant access after your request.
+      </div>
+    </div>
+  );
+}
+
+
 function Settings() {
 
   const [theme, setTheme] = useState(
@@ -8341,6 +8438,46 @@ function Settings() {
           <div style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 10 }}>
             Unlock OLED / Cyberpunk / Matrix with BrowserOS Nitro (or staff).
           </div>
+        )}
+
+        {/* NITRO / TURBO */}
+        <div style={{ padding: "12px 4px 4px", fontSize: 13, fontWeight: 800 }}>
+          BrowserOS Nitro
+        </div>
+        <div style={{ padding: "0 4px 8px", fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45 }}>
+          Nitro unlocks Chat, Session Save, more tabs/projects, split view, and disk notes.
+          Turbo adds higher limits and the visible ⚡ TURBO badge.
+        </div>
+        {isTurboUser() ? (
+          <div
+            style={{
+              padding: "12px 14px",
+              borderRadius: 10,
+              background: "linear-gradient(90deg,rgba(167,139,250,0.2),rgba(250,204,21,0.12))",
+              border: "1px solid rgba(167,139,250,0.45)",
+              fontWeight: 800,
+              fontSize: 13,
+              color: "#c4b5fd"
+            }}
+          >
+            ⚡ Turbo Active
+          </div>
+        ) : isNitroUser() ? (
+          <div
+            style={{
+              padding: "12px 14px",
+              borderRadius: 10,
+              background: "linear-gradient(90deg,rgba(245,158,11,0.2),rgba(250,204,21,0.15))",
+              border: "1px solid rgba(250,204,21,0.45)",
+              fontWeight: 800,
+              fontSize: 13,
+              color: "#facc15"
+            }}
+          >
+            🚀 Nitro Active — ask an admin for Turbo if you want the crest badge
+          </div>
+        ) : (
+          <SettingsGetNitroButtons />
         )}
 
         {/* DEV MODE */}
@@ -11894,13 +12031,13 @@ function isNitroUser(profile) {
 }
 
 function resolveShowBadge(pref, isTurbo, isNitro) {
+  // Nitro is the chat tier for everyone with chat access — hide NITRO chips in
+  // member list / messages. Only Turbo stays visible as a distinct badge.
+  void isNitro;
+  if (!isTurbo) return null;
   const p = String(pref || "auto");
-  if (p === "none" || p === "admin" || p === "dev") return null;
-  if (p === "turbo") return isTurbo ? "turbo" : isNitro ? "nitro" : null;
-  if (p === "nitro") return isNitro || isTurbo ? "nitro" : null;
-  if (isTurbo) return "turbo";
-  if (isNitro) return "nitro";
-  return null;
+  if (p === "none" || p === "admin" || p === "dev" || p === "nitro") return null;
+  return "turbo";
 }
 
 /** Staff title next to chat name: auto | dev | admin | none */
