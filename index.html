@@ -3294,6 +3294,10 @@ function Notes(){
   };
 
   const openFromDisk = async () => {
+    if (typeof hasProAccess === "function" && !hasProAccess()) {
+      flash("Save/open .txt on disk needs Nitro — notes still auto-save in the browser.");
+      return;
+    }
     try {
       if (supportsFsAccess) {
         const [handle] = await window.showOpenFilePicker({
@@ -3342,6 +3346,10 @@ function Notes(){
   };
 
   const saveToDisk = async () => {
+    if (typeof hasProAccess === "function" && !hasProAccess()) {
+      flash("Exporting .txt/.md needs Nitro. Your notes still save automatically in BrowserOS.");
+      return;
+    }
     try {
       if (supportsFsAccess) {
         let handle = fileHandleRef.current;
@@ -7884,6 +7892,10 @@ function SessionSave() {
   const handleExport = () => {
     setError("");
     setMessage("");
+    if (typeof hasProAccess === "function" && !hasProAccess()) {
+      setError(proUpgradeMessage("Cloud session save / cross-device restore"));
+      return;
+    }
     try {
       const saved = JSON.parse(
         localStorage.getItem("browserOS_v3") || "{}"
@@ -7924,6 +7936,10 @@ function SessionSave() {
   const handleImport = () => {
     setError("");
     setMessage("");
+    if (typeof hasProAccess === "function" && !hasProAccess()) {
+      setError(proUpgradeMessage("Cloud session save / cross-device restore"));
+      return;
+    }
     if (!importKey.trim()) {
       setError("Paste a session key first.");
       return;
@@ -10283,6 +10299,21 @@ const UserProjects = {
   async upsert(project) {
     const list = this.get();
     const i = list.findIndex(p => p.id === project.id);
+    if (i < 0) {
+      const cap = typeof maxProjectsAllowed === "function" ? maxProjectsAllowed() : 50;
+      if (list.length >= cap) {
+        const msg =
+          typeof hasProAccess === "function" && !hasProAccess()
+            ? "Free plan: max " +
+              cap +
+              " projects. " +
+              (typeof proUpgradeMessage === "function"
+                ? proUpgradeMessage("More projects")
+                : "Upgrade to Nitro for more.")
+            : "Project limit reached (" + cap + ").";
+        throw new Error(msg);
+      }
+    }
     if (i >= 0) list[i] = project;
     else list.push(project);
     this.save(list);
@@ -11826,12 +11857,20 @@ function startBrowserOSIntegrityMonitor() {
 
 function serverAllowsOsAccess() {
   const ent = getServerEntitlements();
-  if (ent && typeof ent.can_use_os === "boolean") return !!ent.can_use_os;
   const p = window.__browserOSProfile;
-  if (!p) return false;
-  if (p.is_admin || p.is_dev) return true;
-  return p.status === "approved" && p.activated === true && !isAccessExpired(p);
+  if (p && (p.is_admin || p.is_dev)) return true;
+  if (typeof isAccessExpired === "function" && isAccessExpired(p)) return false;
+  // Free tier: approved signup is enough (no paid activation required)
+  if (p && p.status === "approved") return true;
+  if (ent) {
+    if (ent.is_staff || ent.is_admin || ent.is_dev) return true;
+    if (ent.access_expired) return false;
+    if (ent.approved || ent.status === "approved") return true;
+    if (ent.can_use_os) return true;
+  }
+  return false;
 }
+
 
 function getUserTier(profile) {
   const ent = getServerEntitlements();
@@ -11881,6 +11920,52 @@ function isTurboUser(profile) {
   if (ent && typeof ent.is_turbo === "boolean") return !!ent.is_turbo || getUserTier(profile) >= 2;
   return getUserTier(profile) >= 2;
 }
+
+
+/* ── Freemium: free OS entry; Pro (Nitro/Turbo/staff) unlocks social + soft limits ── */
+const FREE_MAX_TABS = 5;
+const FREE_MAX_PROJECTS = 2;
+const FREE_MAX_BOOKMARKS = 2;
+const PAID_MAX_TABS = 11;
+
+function hasProAccess(profile) {
+  const p = profile || (typeof window !== "undefined" ? window.__browserOSProfile : null);
+  if (!p) {
+    try {
+      if (typeof isNitroUser === "function" && isNitroUser()) return true;
+      if (typeof isTurboUser === "function" && isTurboUser()) return true;
+    } catch (_) {}
+    return false;
+  }
+  if (p.is_admin || p.is_dev) return true;
+  if (typeof isStaffProfile === "function" && isStaffProfile(p)) return true;
+  if (typeof isTurboUser === "function" && isTurboUser(p)) return true;
+  if (typeof isNitroUser === "function" && isNitroUser(p)) return true;
+  const t = parseInt(p.tier, 10);
+  if (!isNaN(t) && t >= 1) return true;
+  if (p.is_nitro || p.is_turbo) return true;
+  return false;
+}
+
+function maxTabsAllowed() {
+  return hasProAccess() ? PAID_MAX_TABS : FREE_MAX_TABS;
+}
+
+function maxProjectsAllowed() {
+  return hasProAccess() ? 50 : FREE_MAX_PROJECTS;
+}
+
+function maxBookmarksAllowed() {
+  return hasProAccess() ? 100 : FREE_MAX_BOOKMARKS;
+}
+
+function proUpgradeMessage(feature) {
+  return (
+    (feature || "This feature") +
+    " requires BrowserOS Nitro (or Turbo). Open Settings → Get Nitro, or ask an admin to grant Nitro."
+  );
+}
+
 
 function chatCharLimit(profile) {
   const ent = getServerEntitlements();
@@ -12219,7 +12304,32 @@ class ChatErrorBoundary extends React.Component {
   }
 }
 
-function ChatApp({ openApp }) {
+function ChatApp(props) {
+  if (typeof hasProAccess === "function" && !hasProAccess()) {
+    return (
+      <div className="internal" style={{ padding: 28, maxWidth: 480 }}>
+        <h2 style={{ marginTop: 0 }}>Chat · Nitro</h2>
+        <p style={{ color: "var(--text-muted)", fontSize: 14, lineHeight: 1.55 }}>
+          Chat, DMs, and realtime presence are part of BrowserOS Nitro.
+          The rest of the OS stays free after signup and approval.
+        </p>
+        <button
+          type="button"
+          className="notes-btn"
+          style={{ marginTop: 12 }}
+          onClick={() => {
+            if (typeof props.openApp === "function") props.openApp("settings");
+          }}
+        >
+          Open Settings · Get Nitro
+        </button>
+      </div>
+    );
+  }
+  return <ChatAppInner {...props} />;
+}
+
+function ChatAppInner({ openApp }) {
 
   const [messages, setMessages] = useState([]);
   const [hasMoreOlder, setHasMoreOlder] = useState(false);
@@ -20558,7 +20668,8 @@ function App() {
         const s = JSON.parse(localStorage.getItem("browserOS_v3") || "{}");
     
         if (s.tabs?.length) {
-          const restored = s.tabs.slice(0, MAX_TABS).map(t => {
+          const tabCap = typeof maxTabsAllowed === "function" ? maxTabsAllowed() : MAX_TABS;
+          const restored = s.tabs.slice(0, tabCap).map(t => {
             const base = {
               ...t,
               id: t.id ?? createTabId(),
@@ -20606,6 +20717,20 @@ function App() {
     // .os apps (built-in or user projects)
     if (val.endsWith(".os")) {
       const key = val.replace(".os", "").toLowerCase();
+      if (
+        (key === "chat" || key === "sessionsave") &&
+        typeof hasProAccess === "function" &&
+        !hasProAccess()
+      ) {
+        alert(
+          typeof proUpgradeMessage === "function"
+            ? proUpgradeMessage(
+                key === "chat" ? "Chat" : "Session Save / cross-device restore"
+              )
+            : "This feature requires Nitro."
+        );
+        return;
+      }
       const builtIn = apps[key];
       const project = !builtIn ? UserProjects.getBySlug(key) : null;
 
@@ -20666,6 +20791,17 @@ function App() {
   ───────────────────────────── */
 
     const openApp = useCallback((key) => {
+      const k = String(key || "").toLowerCase().replace(/\.os$/i, "");
+      if ((k === "chat" || k === "sessionsave") && typeof hasProAccess === "function" && !hasProAccess()) {
+        alert(
+          typeof proUpgradeMessage === "function"
+            ? proUpgradeMessage(k === "chat" ? "Chat" : "Session Save / cross-device restore")
+            : "This feature requires Nitro."
+        );
+        // Still open a small upgrade tab? For now block.
+        return;
+      }
+
       const builtIn = apps[key];
       const project = !builtIn ? UserProjects.getBySlug(key) : null;
       if (!builtIn && !project) return;
@@ -20700,7 +20836,14 @@ function App() {
   ───────────────────────────── */
 
     const newTab = () => {
-      if (tabs.length >= MAX_TABS) return alert("Max tabs reached");
+      const tabCap = typeof maxTabsAllowed === "function" ? maxTabsAllowed() : MAX_TABS;
+      if (tabs.length >= tabCap) {
+        return alert(
+          hasProAccess()
+            ? "Max tabs reached (" + tabCap + ")."
+            : "Free plan: max " + tabCap + " tabs. " + proUpgradeMessage("More tabs")
+        );
+      }
     
       setTabs(prev => {
         const next = [
@@ -20766,7 +20909,18 @@ function App() {
     const exists = list.some(b => b.url === currentUrl);
 
     if (exists) await Bookmarks.remove(currentUrl);
-    else await Bookmarks.add(currentUrl, title);
+    else {
+      const cap = typeof maxBookmarksAllowed === "function" ? maxBookmarksAllowed() : 100;
+      if (!exists && list.length >= cap) {
+        alert(
+          hasProAccess()
+            ? "Bookmark limit reached."
+            : "Free plan: max " + cap + " bookmarks. " + proUpgradeMessage("More bookmarks")
+        );
+        return;
+      }
+      await Bookmarks.add(currentUrl, title);
+    }
 
     setBookmarks(Bookmarks.get());
   };
@@ -20777,9 +20931,18 @@ function App() {
       setSplitId(null);
       return;
     }
+    if (typeof hasProAccess === "function" && !hasProAccess()) {
+      alert(proUpgradeMessage("Split view"));
+      return;
+    }
     if (tabs.length < 2) {
       // Create a second tab, then split
-      if (tabs.length >= MAX_TABS) {
+      if (typeof hasProAccess === "function" && !hasProAccess()) {
+        alert(proUpgradeMessage("Split view"));
+        return;
+      }
+      const tabCap = typeof maxTabsAllowed === "function" ? maxTabsAllowed() : MAX_TABS;
+      if (tabs.length >= tabCap) {
         alert("Need at least 2 tabs for split view (max tabs reached).");
         return;
       }
@@ -23667,12 +23830,20 @@ function Root() {
               setUnlocked(false);
               return;
             }
-            if (ent.needs_activation || !ent.can_use_os) {
-              setNeedsActivation(profile || { email: ent.email, status: ent.status });
+            // Free OS: approved users enter without paid activation.
+            // Nitro/activation only gates Pro features (chat, session cloud, …).
+            const approvedFree =
+              (profile &&
+                (profile.status === "approved" ||
+                  profile.is_admin ||
+                  profile.is_dev)) ||
+              (ent && (ent.approved || ent.status === "approved" || ent.is_staff));
+            if (ent.needs_approval) {
+              setPendingProfile(profile || { status: "pending" });
               setUnlocked(false);
               return;
             }
-            if (ent.can_use_os) {
+            if (approvedFree || ent.can_use_os) {
               setNeedsActivation(null);
               setPendingProfile(null);
               setRejectedProfile(null);
@@ -23690,8 +23861,15 @@ function Root() {
             setUnlocked(false);
             return;
           }
-          if (profile && !isProfileActivated(profile)) {
-            setNeedsActivation(profile);
+          // Do not block free OS on activation — only approval matters here
+          if (
+            profile &&
+            profile.status &&
+            profile.status !== "approved" &&
+            !profile.is_admin &&
+            !profile.is_dev
+          ) {
+            setPendingProfile(profile);
             setUnlocked(false);
             return;
           }
