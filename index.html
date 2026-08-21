@@ -23071,6 +23071,9 @@ function App() {
    ───────────────────────────────────────────── */
 const BROWSEROS_VERSION = "1.1.0-shell";
 const BROWSEROS_CHANNEL = "stable";
+// Change BOTH version and this token on every critical release.
+// Server table browseros_app_config.min_build_token must match (or be empty to allow all).
+const BROWSEROS_BUILD_TOKEN = "bos_build_7f3a9c2e1b84d0f6a5e8c3b2917d4e60";
 
 const BROWSEROS_SUPABASE = {
   url: "https://nthokwsumfutibmjevrz.supabase.co",
@@ -23118,6 +23121,64 @@ function browserOSMarkOauthPending() {
   try {
     sessionStorage.setItem("browserOS_oauth_pending", "1");
   } catch (_) {}
+}
+
+
+/** Force-update gate: compare local build token to Supabase config. */
+async function fetchRequiredBuildToken(client) {
+  const c = client || (typeof getSupabaseClient === "function" ? getSupabaseClient() : null);
+  if (!c) return null;
+  try {
+    const { data, error } = await c
+      .from("browseros_app_config")
+      .select("min_build_token, min_version, force_update_message")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) {
+      // Table missing or RLS — do not lock users out
+      console.warn("build config", error.message || error);
+      return null;
+    }
+    return data || null;
+  } catch (err) {
+    console.warn("build config fetch", err);
+    return null;
+  }
+}
+
+function localBuildToken() {
+  return typeof BROWSEROS_BUILD_TOKEN !== "undefined"
+    ? String(BROWSEROS_BUILD_TOKEN)
+    : "";
+}
+
+function localBuildVersion() {
+  return typeof BROWSEROS_VERSION !== "undefined"
+    ? String(BROWSEROS_VERSION)
+    : "dev";
+}
+
+/**
+ * Returns { ok: true } or { ok: false, message }
+ * If server has no row / empty min_build_token → allow (ok).
+ */
+async function checkClientBuildFreshness(client) {
+  const cfg = await fetchRequiredBuildToken(client);
+  if (!cfg) return { ok: true, skipped: true };
+  const required = String(cfg.min_build_token || "").trim();
+  if (!required) return { ok: true, skipped: true };
+  const local = localBuildToken();
+  if (local && local === required) return { ok: true };
+  const msg =
+    (cfg.force_update_message && String(cfg.force_update_message).trim()) ||
+    "New Update: Refresh to regain access. Download the latest BrowserOS file and open it again.";
+  return {
+    ok: false,
+    message: msg,
+    required,
+    local,
+    min_version: cfg.min_version || null
+  };
 }
 
 function isSupabaseConfigured() {
@@ -24998,6 +25059,7 @@ function Root() {
   const [rejectedProfile, setRejectedProfile] = useState(null);
   const [pendingProfile, setPendingProfile] = useState(null);
   const [revokeMsg, setRevokeMsg] = useState("");
+  const [staleClient, setStaleClient] = useState(null); // { message } when build token mismatch
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [newPw, setNewPw] = useState("");
   const [newPw2, setNewPw2] = useState("");
@@ -25021,6 +25083,40 @@ function Root() {
     return () => {
       window.removeEventListener("offline", goOff);
       window.removeEventListener("online", goOn);
+    };
+  }, []);
+
+  // Critical update gate: poll server build token while online
+  useEffect(() => {
+    let cancelled = false;
+    const enforce = async () => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      if (typeof checkClientBuildFreshness !== "function") return;
+      try {
+        const result = await checkClientBuildFreshness();
+        if (cancelled || !result || result.ok) {
+          if (!cancelled && result && result.ok) setStaleClient(null);
+          return;
+        }
+        setStaleClient({ message: result.message });
+        setUnlocked(false);
+        setPendingProfile(null);
+        setNeedsActivation(null);
+        window.__browserOSProfile = null;
+        try {
+          const client = getSupabaseClient();
+          if (client) await client.auth.signOut({ scope: "local" });
+        } catch (_) {}
+      } catch (_) {}
+    };
+    enforce();
+    const id = setInterval(enforce, 5 * 60 * 1000); // every 5 minutes
+    const onFocus = () => enforce();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+      window.removeEventListener("focus", onFocus);
     };
   }, []);
 
@@ -25336,8 +25432,50 @@ function Root() {
 
   if (!unlocked) {
     return (
+      {staleClient ? (
+        <div className="auth-screen">
+          <div className="auth-card">
+            <div className="auth-logo">BrowserOS</div>
+            <div className="auth-sub">Update required</div>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.55, marginBottom: 14 }}>
+              {staleClient.message ||
+                "New Update: Refresh to regain access. Open the latest BrowserOS file."}
+            </p>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 14 }}>
+              This build: <strong style={{ color: "var(--text)" }}>{localBuildVersion()}</strong>
+            </div>
+            <button
+              type="button"
+              className="auth-btn"
+              onClick={() => {
+                try {
+                  window.location.reload();
+                } catch (_) {}
+              }}
+            >
+              Refresh page
+            </button>
+            <div className="auth-hint" style={{ marginTop: 12 }}>
+              If this is a downloaded file, replace it with the newest BrowserOS.html from the
+              publisher, then open that file.
+            </div>
+          </div>
+        </div>
+      ) : (
       <AuthScreen
         onUnlock={async (session, profile) => {
+          // Block outdated clients before entering the OS
+          try {
+            const freshness = await checkClientBuildFreshness();
+            if (freshness && !freshness.ok) {
+              setStaleClient({ message: freshness.message });
+              try {
+                const client = getSupabaseClient();
+                if (client) await client.auth.signOut({ scope: "local" });
+              } catch (_) {}
+              return;
+            }
+          } catch (_) {}
           setRevokeMsg("");
           const client = getSupabaseClient();
           // Always trust server gate — never unlock from client profile flags alone
@@ -25410,6 +25548,7 @@ function Root() {
         onPending={profile => setPendingProfile(profile || { status: "pending" })}
         revokeMessage={revokeMsg}
       />
+      )}
     );
   }
   try {
