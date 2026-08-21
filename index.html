@@ -1402,39 +1402,197 @@ textarea.notes-ta{
   justify-content:center;
   align-items:center;
   gap:18px;
-  background:#0f172a;
+  background:#070b14;
   color:#e2e8f0;
   font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   user-select:none;
   -webkit-user-select:none;
   z-index:999999;
+  overflow:hidden;
+}
+.os-boot-bg{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:0;
+}
+.os-boot-grid{
+  position:absolute;
+  inset:-20%;
+  background-image:
+    linear-gradient(rgba(110,231,183,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(129,140,248,0.06) 1px, transparent 1px);
+  background-size:48px 48px;
+  transform:perspective(400px) rotateX(58deg) translateY(-12%);
+  animation:boot-grid-drift 18s linear infinite;
+  opacity:0.7;
+  mask-image:radial-gradient(ellipse 70% 55% at 50% 40%, #000 20%, transparent 75%);
+  -webkit-mask-image:radial-gradient(ellipse 70% 55% at 50% 40%, #000 20%, transparent 75%);
+}
+.os-boot-orb{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(48px);
+  opacity:0.55;
+  animation:boot-orb-float 12s ease-in-out infinite;
+}
+.os-boot-orb.a{
+  width:min(42vw, 320px);
+  height:min(42vw, 320px);
+  left:8%;
+  top:18%;
+  background:radial-gradient(circle, rgba(110,231,183,0.55), transparent 70%);
+  animation-delay:0s;
+}
+.os-boot-orb.b{
+  width:min(50vw, 380px);
+  height:min(50vw, 380px);
+  right:5%;
+  bottom:12%;
+  background:radial-gradient(circle, rgba(129,140,248,0.5), transparent 70%);
+  animation-delay:-4s;
+}
+.os-boot-orb.c{
+  width:min(36vw, 260px);
+  height:min(36vw, 260px);
+  left:40%;
+  top:55%;
+  background:radial-gradient(circle, rgba(56,189,248,0.4), transparent 70%);
+  animation-delay:-8s;
+}
+.os-boot-ring{
+  position:absolute;
+  width:min(70vw, 420px);
+  height:min(70vw, 420px);
+  border-radius:50%;
+  border:1px solid rgba(148,163,184,0.12);
+  box-shadow:
+    0 0 40px rgba(110,231,183,0.08) inset,
+    0 0 80px rgba(129,140,248,0.06);
+  animation:boot-ring-pulse 4.5s ease-in-out infinite;
+}
+.os-boot-ring::before{
+  content:"";
+  position:absolute;
+  inset:18%;
+  border-radius:50%;
+  border:1px dashed rgba(110,231,183,0.18);
+  animation:boot-spin 28s linear infinite;
+}
+.os-boot-content{
+  position:relative;
+  z-index:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:18px;
 }
 .os-boot-logo{
-  font-size:28px;
+  font-size:clamp(28px, 6vw, 40px);
   font-weight:800;
-  letter-spacing:-0.02em;
-  background:linear-gradient(135deg,#6ee7b7,#818cf8);
+  letter-spacing:-0.03em;
+  background:linear-gradient(110deg,#6ee7b7 0%,#38bdf8 45%,#818cf8 100%);
+  background-size:200% 200%;
   -webkit-background-clip:text;
   background-clip:text;
   -webkit-text-fill-color:transparent;
   color:transparent;
+  animation:boot-logo-shine 4s ease-in-out infinite;
+  filter:drop-shadow(0 0 24px rgba(56,189,248,0.25));
 }
 .boot-spinner{
-  width:36px;
-  height:36px;
+  width:40px;
+  height:40px;
   border-radius:50%;
-  border:3px solid rgba(148,163,184,0.25);
+  border:3px solid rgba(148,163,184,0.18);
   border-top-color:#6ee7b7;
-  animation:boot-spin 0.75s linear infinite;
+  border-right-color:#818cf8;
+  animation:boot-spin 0.85s linear infinite;
+  box-shadow:0 0 16px rgba(110,231,183,0.2);
 }
 .os-boot-status{
   font-size:13px;
   color:#94a3b8;
-  letter-spacing:0.04em;
+  letter-spacing:0.06em;
+  animation:boot-status-fade 2.2s ease-in-out infinite;
+}
+.os-boot-dots::after{
+  content:"";
+  animation:boot-dots 1.4s steps(4, end) infinite;
 }
 @keyframes boot-spin{
   to{transform:rotate(360deg)}
 }
+@keyframes boot-grid-drift{
+  from{background-position:0 0, 0 0}
+  to{background-position:0 48px, 48px 0}
+}
+@keyframes boot-orb-float{
+  0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(12px,-18px) scale(1.08)}
+}
+@keyframes boot-ring-pulse{
+  0%,100%{transform:scale(1); opacity:0.7}
+  50%{transform:scale(1.04); opacity:1}
+}
+@keyframes boot-logo-shine{
+  0%,100%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+}
+@keyframes boot-status-fade{
+  0%,100%{opacity:0.55}
+  50%{opacity:1}
+}
+@keyframes boot-dots{
+  0%{content:""}
+  25%{content:"."}
+  50%{content:".."}
+  75%{content:"..."}
+}
+
+/* Mention autocomplete */
+.chat-mention-ac{
+  position:absolute;
+  left:0;right:0;
+  bottom:100%;
+  margin-bottom:6px;
+  max-height:240px;
+  overflow:auto;
+  background:var(--chrome-bg,var(--surface));
+  border:1px solid var(--border2,var(--border));
+  border-radius:10px;
+  box-shadow:0 12px 28px rgba(0,0,0,0.4);
+  z-index:32;
+  padding:4px;
+}
+.chat-mention-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  text-align:left;
+  padding:8px 10px;
+  border:none;
+  border-radius:8px;
+  background:transparent;
+  color:var(--text);
+  cursor:pointer;
+  font-family:inherit;
+}
+.chat-mention-item:hover,
+.chat-mention-item.active{
+  background:var(--surface2);
+}
+.chat-mention-item .mi-av{
+  width:32px;height:32px;border-radius:50%;
+  background:var(--surface3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;flex-shrink:0;
+  overflow:hidden;
+}
+.chat-mention-item .mi-av img{width:100%;height:100%;object-fit:cover}
+.chat-mention-item .mi-name{font-size:13px;font-weight:700;line-height:1.2}
+.chat-mention-item .mi-email{font-size:11px;color:var(--text-muted);line-height:1.25;word-break:break-all}
 
 /* ── NOTIFICATIONS ── */
 .bos-notify-stack{
@@ -2557,9 +2715,18 @@ try {
 </script>
 <div id="root">
   <div class="os-boot-screen" aria-busy="true" aria-live="polite">
-    <div class="os-boot-logo">BrowserOS</div>
-    <div class="boot-spinner" aria-hidden="true"></div>
-    <div class="os-boot-status">Booting BrowserOS…</div>
+    <div class="os-boot-bg" aria-hidden="true">
+      <div class="os-boot-orb a"></div>
+      <div class="os-boot-orb b"></div>
+      <div class="os-boot-orb c"></div>
+      <div class="os-boot-grid"></div>
+      <div class="os-boot-ring"></div>
+    </div>
+    <div class="os-boot-content">
+      <div class="os-boot-logo">BrowserOS</div>
+      <div class="boot-spinner" aria-hidden="true"></div>
+      <div class="os-boot-status">Initializing system environment<span class="os-boot-dots"></span></div>
+    </div>
   </div>
 </div>
 
@@ -10697,6 +10864,86 @@ function UserProjectRunner({ project }) {
 }
 
 /* ─── NOTIFICATIONS ─── */
+
+function findMentionQuery(text, cursor) {
+  const c = typeof cursor === "number" ? cursor : String(text || "").length;
+  const before = String(text || "").slice(0, c);
+  // @token from last whitespace (or start) to cursor
+  const m = before.match(/(^|[\s([{])@([^\s@]*)$/);
+  if (!m) return null;
+  const atStart = before.length - m[2].length - 1;
+  return { start: atStart, end: c, query: m[2] };
+}
+
+function filterMentionCandidates(query, memberList, nickMap, avatarMap) {
+  const q = String(query || "").toLowerCase().replace(/^@/, "");
+  const list = Array.isArray(memberList) ? memberList : [];
+  const out = [];
+  const seen = new Set();
+
+  // @everyone when query matches
+  if (!q || "everyone".startsWith(q) || q === "every") {
+    out.push({
+      email: "everyone",
+      name: "everyone",
+      label: "@everyone",
+      insert: "@everyone ",
+      everyone: true
+    });
+  }
+
+  list.forEach(p => {
+    const email = String((p && p.email) || "").toLowerCase();
+    if (!email || seen.has(email)) return;
+    const name = String(
+      (p && p.display_name) ||
+        (nickMap && nickMap[email]) ||
+        email.split("@")[0] ||
+        email
+    );
+    const hay = (name + " " + email).toLowerCase();
+    if (q && hay.indexOf(q) < 0 && email.indexOf(q) < 0 && name.toLowerCase().indexOf(q) < 0) {
+      return;
+    }
+    seen.add(email);
+    out.push({
+      email,
+      name,
+      label: name,
+      insert: "@" + email + " ",
+      avatar: (p && p.avatar_url) || (avatarMap && avatarMap[email]) || "",
+      everyone: false
+    });
+  });
+
+  // also nickMap-only entries not in memberList
+  if (nickMap && typeof nickMap === "object") {
+    Object.keys(nickMap).forEach(email => {
+      const em = String(email || "").toLowerCase();
+      if (!em || seen.has(em)) return;
+      const name = String(nickMap[em] || em.split("@")[0]);
+      const hay = (name + " " + em).toLowerCase();
+      if (q && hay.indexOf(q) < 0) return;
+      seen.add(em);
+      out.push({
+        email: em,
+        name,
+        label: name,
+        insert: "@" + em + " ",
+        avatar: (avatarMap && avatarMap[em]) || "",
+        everyone: false
+      });
+    });
+  }
+
+  out.sort((a, b) => {
+    if (a.everyone) return -1;
+    if (b.everyone) return 1;
+    return String(a.name).localeCompare(String(b.name));
+  });
+  return out.slice(0, 12);
+}
+
 function extractChatPings(text, nickToEmail) {
   const src = String(text || "");
   const found = new Set();
@@ -11851,6 +12098,9 @@ async function refreshServerEntitlements(client) {
 
 /** Detect client privilege spoofing vs server gate; report + hard lock. */
 window.__browserOSTamperReported = window.__browserOSTamperReported || false;
+window.__browserOSIntegrityStrikes = window.__browserOSIntegrityStrikes || 0;
+/** Only hard-ban on clear role/tier spoof — never on free-tier unlock quirks. */
+window.__browserOSIntegrityAutoBan = true;
 
 async function reportClientTamper(reason, detail) {
   if (window.__browserOSTamperReported) return true;
@@ -11889,53 +12139,72 @@ function collectClientPrivilegeClaims() {
     is_turbo: !!p.is_turbo,
     activated: !!p.activated,
     status: p.status || null,
-    tier: p.tier || 0,
+    tier: Number(p.tier) || 0,
     unlocked_flag: !!window.__browserOSUnlockedHint
   };
 }
 
 /**
  * Compare local claims to server entitlements.
- * Returns { tamper, reasons[] } when local elevates above server.
+ * ONLY flags clear privilege elevation (admin / dev / turbo / nitro).
+ * Free-tier unlock (approved without activation) is intentional and must NOT ban.
  */
 function detectPrivilegeTamper(ent) {
   if (!ent || ent.ok === false) return { tamper: false, reasons: [] };
-  // Owner never trips automod from this check
+  // Incomplete server payload — do not ban
+  if (ent.status == null && ent.is_admin == null && ent.tier == null && ent.is_nitro == null) {
+    return { tamper: false, reasons: [] };
+  }
   try {
     if (typeof isPrimaryOwnerClient === "function" && isPrimaryOwnerClient()) {
       return { tamper: false, reasons: [] };
+    }
+    if (typeof isPrimaryOwnerEmail === "function") {
+      const em =
+        (window.__browserOSProfile && window.__browserOSProfile.email) ||
+        ent.email ||
+        "";
+      if (em && isPrimaryOwnerEmail(em)) {
+        return { tamper: false, reasons: [] };
+      }
     }
   } catch (_) {}
 
   const local = collectClientPrivilegeClaims();
   const reasons = [];
 
-  if (local.is_admin && !ent.is_admin && !ent.is_staff) {
+  // Staff / role spoof only when server explicitly says false
+  if (local.is_admin === true && ent.is_admin === false && ent.is_staff !== true && ent.is_dev !== true) {
     reasons.push("spoofed_is_admin");
   }
-  if (local.is_dev && !ent.is_dev && !ent.is_staff) {
+  if (local.is_dev === true && ent.is_dev === false && ent.is_staff !== true) {
     reasons.push("spoofed_is_dev");
   }
-  if ((local.is_nitro || local.tier >= 1) && !(ent.is_nitro || ent.tier >= 1)) {
-    reasons.push("spoofed_nitro");
-  }
-  if ((local.is_turbo || local.tier >= 2) && !(ent.is_turbo || ent.tier >= 2)) {
+  // Turbo spoof — only when server has definitive false
+  if (
+    (local.is_turbo === true || local.tier >= 2) &&
+    ent.is_turbo === false &&
+    (ent.tier === 0 || ent.tier === 1) &&
+    ent.is_staff !== true
+  ) {
     reasons.push("spoofed_turbo");
   }
-  if (local.activated && !ent.activated && !ent.is_staff) {
-    reasons.push("spoofed_activated");
-  }
-  if (local.status === "approved" && ent.status && ent.status !== "approved" && !ent.approved) {
-    reasons.push("spoofed_approved_status");
-  }
-  // Desktop forced open while server denies
+  // Nitro spoof — only definitive false; staff exempt
   if (
-    window.__browserOSUnlockedHint &&
-    ent.can_use_os === false &&
-    !ent.is_staff
+    (local.is_nitro === true || local.tier >= 1) &&
+    ent.is_nitro === false &&
+    (ent.tier === 0 || ent.tier == null) &&
+    ent.is_staff !== true &&
+    ent.is_admin !== true &&
+    ent.is_dev !== true
   ) {
-    reasons.push("forced_unlock_without_gate");
+    reasons.push("spoofed_nitro");
   }
+
+  // REMOVED (caused false bans after freemium):
+  // - spoofed_activated (activation no longer required for free OS)
+  // - spoofed_approved_status (race / laggy gate)
+  // - forced_unlock_without_gate (free approved users unlock while server can_use_os may still be false)
 
   return { tamper: reasons.length > 0, reasons: reasons, local: local };
 }
@@ -11944,28 +12213,48 @@ async function runIntegrityCheck(client) {
   try {
     const ent =
       (await refreshServerEntitlements(client)) || getServerEntitlements();
-    if (!ent) return { ok: true };
-    const hit = detectPrivilegeTamper(ent);
-    if (hit.tamper) {
-      await reportClientTamper(hit.reasons.join(","), {
-        reasons: hit.reasons,
-        local: hit.local,
-        server: {
-          tier: ent.tier,
-          is_admin: ent.is_admin,
-          is_dev: ent.is_dev,
-          is_nitro: ent.is_nitro,
-          is_turbo: ent.is_turbo,
-          activated: ent.activated,
-          status: ent.status,
-          can_use_os: ent.can_use_os
-        },
-        ua: typeof navigator !== "undefined" ? navigator.userAgent : "",
-        at: new Date().toISOString()
-      });
-      return { ok: false, tamper: true, reasons: hit.reasons, ent: ent };
+    if (!ent || ent.ok === false) {
+      window.__browserOSIntegrityStrikes = 0;
+      return { ok: true };
     }
-    return { ok: true, ent: ent };
+    const hit = detectPrivilegeTamper(ent);
+    if (!hit.tamper) {
+      window.__browserOSIntegrityStrikes = 0;
+      return { ok: true, ent: ent };
+    }
+    // Require 3 consecutive hits before ban — avoids race after login / entitlement lag
+    window.__browserOSIntegrityStrikes =
+      (window.__browserOSIntegrityStrikes || 0) + 1;
+    console.warn(
+      "[BrowserOS integrity]",
+      hit.reasons,
+      "strike",
+      window.__browserOSIntegrityStrikes
+    );
+    if (window.__browserOSIntegrityStrikes < 3) {
+      return { ok: true, pending: true, reasons: hit.reasons, ent: ent };
+    }
+    if (window.__browserOSIntegrityAutoBan === false) {
+      console.warn("[BrowserOS integrity] auto-ban disabled; reasons:", hit.reasons);
+      return { ok: true, tamper: true, reasons: hit.reasons, ent: ent };
+    }
+    await reportClientTamper(hit.reasons.join(","), {
+      reasons: hit.reasons,
+      local: hit.local,
+      server: {
+        tier: ent.tier,
+        is_admin: ent.is_admin,
+        is_dev: ent.is_dev,
+        is_nitro: ent.is_nitro,
+        is_turbo: ent.is_turbo,
+        activated: ent.activated,
+        status: ent.status,
+        can_use_os: ent.can_use_os
+      },
+      ua: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      at: new Date().toISOString()
+    });
+    return { ok: false, tamper: true, reasons: hit.reasons, ent: ent };
   } catch (_) {
     return { ok: true };
   }
@@ -11979,16 +12268,15 @@ function startBrowserOSIntegrityMonitor() {
       runIntegrityCheck();
     } catch (_) {}
   };
-  setInterval(tick, 20000);
-  setTimeout(tick, 4000);
-  // Profile object mutation hint
-  try {
-    const p = window.__browserOSProfile;
-    if (p && !p.__tamperProxied) {
-      // lightweight: re-check on focus
-    }
-  } catch (_) {}
-  window.addEventListener("focus", tick);
+  // Slower interval; first check after 15s so entitlements can settle post-login
+  setInterval(tick, 45000);
+  setTimeout(tick, 15000);
+  window.addEventListener("focus", () => {
+    // Soft focus recheck — still needs 3 strikes
+    try {
+      runIntegrityCheck();
+    } catch (_) {}
+  });
 }
 
 
@@ -12543,6 +12831,13 @@ function ChatAppInner({ openApp }) {
   const [memberMenu, setMemberMenu] = useState(null); // {x,y,email}
   const [showMembers, setShowMembers] = useState(true);
   const [cmdMenu, setCmdMenu] = useState({ open: false, items: [], index: 0 });
+  const [mentionMenu, setMentionMenu] = useState({
+    open: false,
+    items: [],
+    index: 0,
+    start: 0,
+    end: 0
+  });
   const [emojiMenu, setEmojiMenu] = useState({
     open: false,
     items: [],
@@ -18808,6 +19103,45 @@ function ChatAppInner({ openApp }) {
               ))}
             </div>
           )}
+          {mentionMenu.open && mentionMenu.items.length > 0 && (
+            <div className="chat-mention-ac" role="listbox" aria-label="Mention suggestions">
+              {mentionMenu.items.map((item, idx) => (
+                <button
+                  key={item.email + "-" + idx}
+                  type="button"
+                  className={"chat-mention-item" + (idx === mentionMenu.index ? " active" : "")}
+                  onMouseDown={e => {
+                    e.preventDefault();
+                    const before = text.slice(0, mentionMenu.start);
+                    const after = text.slice(mentionMenu.end);
+                    setText(before + item.insert + after);
+                    setMentionMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
+                  }}
+                >
+                  <div className="mi-av">
+                    {item.everyone ? (
+                      "📢"
+                    ) : item.avatar ? (
+                      <img src={item.avatar} alt="" />
+                    ) : (
+                      String(item.name || "?").slice(0, 1).toUpperCase()
+                    )}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div className="mi-name">
+                      {item.everyone ? "@everyone" : item.name}
+                    </div>
+                    {!item.everyone && (
+                      <div className="mi-email">{item.email}</div>
+                    )}
+                    {item.everyone && (
+                      <div className="mi-email">Notify everyone in this channel</div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
           {emojiMenu.open && emojiMenu.items.length > 0 && (
             <div className="chat-emoji-ac">
               {emojiMenu.items.map((item, idx) => (
@@ -18850,6 +19184,7 @@ function ChatAppInner({ openApp }) {
                 );
                 setCmdMenu({ open: items.length > 0, items, index: 0 });
                 setEmojiMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
+                setMentionMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
               } else if (v.startsWith("/")) {
                 const q = v.slice(1).toLowerCase();
                 const items = ADMIN_SLASH_COMMANDS.filter(
@@ -18857,24 +19192,77 @@ function ChatAppInner({ openApp }) {
                 );
                 setCmdMenu({ open: items.length > 0, items, index: 0 });
                 setEmojiMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
+                setMentionMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
               } else {
                 setCmdMenu({ open: false, items: [], index: 0 });
-                const eq = findEmojiQuery(v, cursor);
-                if (eq) {
-                  const items = filterEmojiShortcodes(eq.query);
-                  setEmojiMenu({
+                const mq = typeof findMentionQuery === "function" ? findMentionQuery(v, cursor) : null;
+                if (mq) {
+                  const items = filterMentionCandidates(
+                    mq.query,
+                    memberList,
+                    nickMap,
+                    avatarMap
+                  );
+                  setMentionMenu({
                     open: items.length > 0,
                     items,
                     index: 0,
-                    start: eq.start,
-                    end: eq.end
+                    start: mq.start,
+                    end: mq.end
                   });
-                } else {
                   setEmojiMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
+                } else {
+                  setMentionMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
+                  const eq = findEmojiQuery(v, cursor);
+                  if (eq) {
+                    const items = filterEmojiShortcodes(eq.query);
+                    setEmojiMenu({
+                      open: items.length > 0,
+                      items,
+                      index: 0,
+                      start: eq.start,
+                      end: eq.end
+                    });
+                  } else {
+                    setEmojiMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
+                  }
                 }
               }
             }}
             onKeyDown={e => {
+              if (mentionMenu.open && mentionMenu.items.length) {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setMentionMenu(m => ({
+                    ...m,
+                    index: (m.index + 1) % m.items.length
+                  }));
+                  return;
+                }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setMentionMenu(m => ({
+                    ...m,
+                    index: (m.index - 1 + m.items.length) % m.items.length
+                  }));
+                  return;
+                }
+                if (e.key === "Tab" || (e.key === "Enter" && !e.shiftKey)) {
+                  e.preventDefault();
+                  const item = mentionMenu.items[mentionMenu.index];
+                  if (item) {
+                    const before = text.slice(0, mentionMenu.start);
+                    const after = text.slice(mentionMenu.end);
+                    setText(before + item.insert + after);
+                  }
+                  setMentionMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
+                  return;
+                }
+                if (e.key === "Escape") {
+                  setMentionMenu({ open: false, items: [], index: 0, start: 0, end: 0 });
+                  return;
+                }
+              }
               if (cmdMenu.open && cmdMenu.items.length) {
                 if (e.key === "ArrowDown") {
                   e.preventDefault();
