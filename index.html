@@ -25431,8 +25431,7 @@ function Root() {
   }
 
   if (!unlocked) {
-    return (
-      {staleClient ? (
+    return staleClient ? (
         <div className="auth-screen">
           <div className="auth-card">
             <div className="auth-logo">BrowserOS</div>
@@ -25548,7 +25547,6 @@ function Root() {
         onPending={profile => setPendingProfile(profile || { status: "pending" })}
         revokeMessage={revokeMsg}
       />
-      )}
     );
   }
   try {
