@@ -2959,174 +2959,6 @@ html:not(.banner-motion-on) .profile-card-shell.deco-prism{
   .os-dock{bottom:8px;padding:6px 8px;gap:4px}
   .os-dock-btn{width:38px;height:38px;font-size:16px}
 }
-
-/* ── VM / Desktop shell ── */
-.auth-screen{
-  min-height:100vh;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:24px;
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.35), transparent 55%),
-    radial-gradient(ellipse 60% 50% at 80% 100%, rgba(16,185,129,0.18), transparent 50%),
-    linear-gradient(165deg, #070b14 0%, #0f172a 45%, #0b1220 100%);
-  position:relative;
-  overflow:hidden;
-}
-.auth-screen::before{
-  content:"";
-  position:absolute;inset:0;
-  background-image:
-    linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px);
-  background-size:48px 48px;
-  pointer-events:none;
-  opacity:0.7;
-}
-.auth-card{
-  position:relative;z-index:1;
-  width:100%;max-width:380px;
-  background:rgba(15,23,42,0.82);
-  border:1px solid rgba(148,163,184,0.18);
-  border-radius:20px;
-  padding:28px 26px 22px;
-  backdrop-filter:blur(18px);
-  box-shadow:0 24px 64px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.03) inset;
-}
-.auth-logo{
-  font-size:28px;font-weight:800;letter-spacing:-0.03em;
-  text-align:center;margin-bottom:4px;
-  background:linear-gradient(135deg,#e2e8f0,#94a3b8);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.auth-sub{text-align:center;font-size:13px;color:var(--text-muted);margin-bottom:18px}
-.auth-lock-avatar{
-  width:72px;height:72px;border-radius:50%;
-  margin:0 auto 14px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:32px;
-  background:linear-gradient(145deg,rgba(99,102,241,0.35),rgba(16,185,129,0.25));
-  border:2px solid rgba(148,163,184,0.25);
-  box-shadow:0 8px 24px rgba(0,0,0,0.35);
-}
-.auth-label{font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:4px;letter-spacing:0.04em;text-transform:uppercase}
-.auth-input{
-  width:100%;box-sizing:border-box;
-  padding:10px 12px;border-radius:10px;
-  border:1px solid var(--border2);
-  background:rgba(0,0,0,0.28);color:var(--text);
-  font-family:inherit;font-size:14px;outline:none;
-}
-.auth-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(110,231,183,0.12)}
-.auth-btn{
-  width:100%;margin-top:14px;padding:11px 14px;border-radius:10px;
-  border:none;cursor:pointer;font-weight:800;font-family:inherit;font-size:14px;
-  background:linear-gradient(135deg,#34d399,#10b981);color:#042f2e;
-}
-.auth-btn:disabled{opacity:0.5;cursor:not-allowed}
-.auth-error{margin-top:12px;font-size:12px;color:#f87171;line-height:1.4}
-.auth-hint{margin-top:14px;font-size:11px;color:var(--text-muted);text-align:center;line-height:1.45}
-
-.desktop-surface{
-  position:relative;
-  width:100%;height:100%;min-height:100%;
-  display:flex;flex-direction:column;
-  overflow:auto;
-}
-.desktop-bg-default{
-  position:absolute;inset:0;z-index:0;
-  background:
-    radial-gradient(ellipse 70% 55% at 20% 20%, rgba(99,102,241,0.28), transparent 60%),
-    radial-gradient(ellipse 55% 45% at 85% 75%, rgba(16,185,129,0.2), transparent 55%),
-    radial-gradient(ellipse 40% 35% at 50% 50%, rgba(56,189,248,0.08), transparent 50%),
-    linear-gradient(160deg, #0a0f1a 0%, #0f172a 40%, #111827 100%);
-}
-.desktop-bg-default::after{
-  content:"BrowserOS";
-  position:absolute;right:24px;bottom:20px;
-  font-family:'Syne',system-ui,sans-serif;
-  font-size:13px;font-weight:700;letter-spacing:0.12em;
-  color:rgba(148,163,184,0.25);text-transform:uppercase;
-  pointer-events:none;user-select:none;
-}
-.desktop-bg-image{
-  position:absolute;inset:0;z-index:0;
-  background-size:cover;background-position:center;background-repeat:no-repeat;
-}
-.desktop-icons{
-  position:relative;z-index:1;
-  display:grid;
-  grid-template-columns:repeat(auto-fill, minmax(92px, 1fr));
-  gap:12px 10px;
-  padding:28px 24px 100px;
-  max-width:720px;
-}
-.desktop-icon{
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  padding:12px 8px;border-radius:14px;
-  border:1px solid transparent;
-  background:transparent;color:var(--text);
-  cursor:pointer;font-family:inherit;
-  transition:background .15s, border-color .15s, transform .15s;
-}
-.desktop-icon:hover{
-  background:rgba(255,255,255,0.08);
-  border-color:rgba(255,255,255,0.12);
-  transform:translateY(-2px);
-}
-.desktop-icon-glyph{
-  width:56px;height:56px;border-radius:16px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:28px;
-  background:rgba(15,23,42,0.72);
-  border:1px solid rgba(148,163,184,0.2);
-  box-shadow:0 8px 20px rgba(0,0,0,0.25);
-  backdrop-filter:blur(8px);
-}
-.desktop-icon-label{
-  font-size:12px;font-weight:700;text-align:center;
-  text-shadow:0 1px 3px rgba(0,0,0,0.65);
-  max-width:88px;line-height:1.25;
-}
-.desktop-topbar{
-  position:relative;z-index:2;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 16px;
-  font-size:12px;font-weight:700;
-  color:rgba(226,232,240,0.9);
-  text-shadow:0 1px 2px rgba(0,0,0,0.5);
-}
-.desktop-topbar .brand{
-  letter-spacing:0.06em;text-transform:uppercase;font-size:11px;
-  opacity:0.85;
-}
-.games-hub{
-  padding:20px;height:100%;overflow:auto;box-sizing:border-box;
-}
-.games-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;
-  margin-top:16px;
-}
-.games-card{
-  border:1px solid var(--border2);border-radius:14px;
-  background:var(--surface);padding:16px 12px;cursor:pointer;
-  text-align:center;font-family:inherit;color:var(--text);
-  transition:border-color .15s, transform .15s;
-}
-.games-card:hover{border-color:var(--accent);transform:translateY(-2px)}
-.games-card .gi{font-size:32px;margin-bottom:8px}
-.games-card .gn{font-weight:800;font-size:13px}
-.games-card .gd{font-size:11px;color:var(--text-muted);margin-top:4px}
-.shell-desktop-wallpaper{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
-}
-.shell > .chrome,
-.shell > .content,
-.shell > .os-status-bar,
-.shell .os-dock,
-.shell .os-dock-show{position:relative;z-index:1}
-
 </style>
 
 
@@ -6348,164 +6180,139 @@ const homeMoreApps = [
   { key: "admin", icon: "🛡️", label: "Admin" }
 ];
     
-
-function GamesApp({ openApp }) {
-  const games = [
-    { key: "play2048", icon: "🟨", name: "2048", desc: "Merge tiles" },
-    { key: "snake", icon: "🐍", name: "Snake", desc: "Classic crawl" },
-    { key: "flappybird", icon: "🐤", name: "Flappy Bird", desc: "Tap to fly" },
-    { key: "bouncyball", icon: "🟣", name: "Bouncy Ball", desc: "Physics toy" },
-    { key: "reactiontime", icon: "⚡", name: "Reaction", desc: "Test your speed" },
-    { key: "aimtrainer", icon: "🎯", name: "Aim Trainer", desc: "Click targets" },
-    { key: "leaderboard", icon: "🏆", name: "Leaderboard", desc: "Global scores" }
-  ];
-  return (
-    <div className="games-hub internal">
-      <h2 style={{ margin: "0 0 6px", fontSize: 20, fontWeight: 800 }}>Games</h2>
-      <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
-        Pick a game to open in a tab — like a games folder on a desktop.
-      </p>
-      <div className="games-grid">
-        {games.map(g => (
-          <button
-            key={g.key}
-            type="button"
-            className="games-card"
-            onClick={() => openApp && openApp(g.key)}
-          >
-            <div className="gi">{g.icon}</div>
-            <div className="gn">{g.name}</div>
-            <div className="gd">{g.desc}</div>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DesktopWallpaperLayer() {
-  const [wp, setWp] = useState(() =>
-    typeof DesktopWallpaper !== "undefined" ? DesktopWallpaper.get() : null
-  );
-  useEffect(() => {
-    const on = (e) => setWp(e.detail || (DesktopWallpaper && DesktopWallpaper.get()));
-    window.addEventListener("browseros-desktop-wallpaper", on);
-    return () => window.removeEventListener("browseros-desktop-wallpaper", on);
-  }, []);
-  if (wp && wp.dataUrl) {
-    return (
-      <div
-        className="desktop-bg-image"
-        style={{
-          backgroundImage: "url(" + wp.dataUrl + ")",
-          filter: "blur(" + ((wp.blur || 0) * 18) + "px)",
-          transform: wp.blur ? "scale(1.06)" : undefined
-        }}
-      />
-    );
-  }
-  return <div className="desktop-bg-default" aria-hidden="true" />;
-}
-
-
 function HomePage({ openApp }) {
-  const [clock, setClock] = useState(() => new Date());
-  const [sleepInfo, setSleepInfo] = useState(() =>
-    typeof getSleepSession === "function" ? getSleepSession() : null
-  );
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [sleepInfo, setSleepInfo] = useState(() => getSleepSession());
   const [msg, setMsg] = useState("");
 
-  useEffect(() => {
-    const id = setInterval(() => setClock(new Date()), 30000);
-    return () => clearInterval(id);
-  }, []);
-
   const launch = key => {
+    setMoreOpen(false);
     if (openApp) openApp(key);
   };
 
-  const desktopApps = [
-    { key: "search", icon: "🔍", label: "Search" },
-    { key: "terminal", icon: "⌨️", label: "Terminal" },
-    { key: "chat", icon: "💬", label: "Chat" },
-    { key: "notes", icon: "📝", label: "Notes" },
-    { key: "projects", icon: "🧩", label: "Projects" },
-    { key: "games", icon: "🎮", label: "Games" },
-    { key: "settings", icon: "⚙️", label: "Settings" },
-    { key: "store", icon: "🛍️", label: "Store" },
-    { key: "history", icon: "🕒", label: "History" },
-    { key: "sessionsave", icon: "💾", label: "Session" }
-  ];
+  const tile = (a, extraClass) => (
+    <button
+      key={a.key}
+      type="button"
+      className={"home-app" + (extraClass ? " " + extraClass : "")}
+      onClick={() => launch(a.key)}
+    >
+      <div className="icon" aria-hidden="true">
+        {a.icon}
+      </div>
+      <div className="label">{a.label}</div>
+    </button>
+  );
 
   const doSleep = () => {
     window.dispatchEvent(new CustomEvent("browseros-sleep-session"));
     setTimeout(() => {
-      setSleepInfo(typeof getSleepSession === "function" ? getSleepSession() : null);
-      setMsg("Session slept.");
-      setTimeout(() => setMsg(""), 2000);
+      setSleepInfo(getSleepSession());
+      setMsg("Session saved — you can resume later.");
+      setTimeout(() => setMsg(""), 2500);
     }, 50);
   };
   const doResume = () => {
     window.dispatchEvent(new CustomEvent("browseros-resume-session"));
     setTimeout(() => {
-      setSleepInfo(typeof getSleepSession === "function" ? getSleepSession() : null);
-      setMsg("Session resumed.");
+      setSleepInfo(getSleepSession());
+      setMsg("Session restored.");
       setTimeout(() => setMsg(""), 2000);
     }, 80);
   };
 
-  const timeStr = clock.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
   return (
-    <div className="desktop-surface home internal">
-      <DesktopWallpaperLayer />
-      <div className="desktop-topbar">
-        <span className="brand">BrowserOS</span>
-        <span>
-          {timeStr}
-          {msg ? " · " + msg : ""}
-        </span>
-      </div>
-      <div className="desktop-icons">
-        {desktopApps.map(a => (
-          <button
-            key={a.key}
-            type="button"
-            className="desktop-icon"
-            onClick={() => launch(a.key)}
-            onDoubleClick={() => launch(a.key)}
-          >
-            <div className="desktop-icon-glyph">{a.icon}</div>
-            <div className="desktop-icon-label">{a.label}</div>
+    <div
+      className="home internal"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        height: "100%",
+        minHeight: "100%",
+        padding: "48px 16px 40px",
+        boxSizing: "border-box",
+        overflowY: "auto",
+        gap: 40
+      }}
+    >
+      <div style={{ textAlign: "center", flexShrink: 0 }}>
+        <div className="home-logo">BrowserOS</div>
+        <div className="home-session-row">
+          <button type="button" className="home-session-btn" onClick={doSleep} title="Save current tabs for later">
+            💤 Sleep session
           </button>
-        ))}
+          <button
+            type="button"
+            className={"home-session-btn" + (sleepInfo ? " primary" : "")}
+            onClick={doResume}
+            disabled={!sleepInfo}
+            title={sleepInfo ? "Restore saved tabs" : "No slept session yet"}
+            style={!sleepInfo ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+          >
+            ▶️ Resume{sleepInfo && sleepInfo.tabs ? " (" + sleepInfo.tabs.length + ")" : ""}
+          </button>
+        </div>
+        {msg && (
+          <div style={{ marginTop: 8, fontSize: 12, color: "var(--accent)" }}>{msg}</div>
+        )}
       </div>
-      <div
-        style={{
-          position: "relative",
-          zIndex: 2,
-          padding: "0 20px 24px",
-          display: "flex",
-          gap: 8,
-          flexWrap: "wrap"
-        }}
-      >
-        <button type="button" className="home-session-btn" onClick={doSleep}>
-          💤 Sleep
-        </button>
+
+      <div className="home-grid">
+        {homePinnedApps.map(a => tile(a))}
         <button
           type="button"
-          className={"home-session-btn" + (sleepInfo ? " primary" : "")}
-          onClick={doResume}
-          disabled={!sleepInfo}
-          style={!sleepInfo ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+          className="home-app more-dots"
+          onClick={() => setMoreOpen(true)}
+          title="All apps"
         >
-          ▶️ Resume
+          <div className="icon" aria-hidden="true">
+            ···
+          </div>
+          <div className="label">More</div>
         </button>
       </div>
+
+      {moreOpen && (
+        <div className="home-more-backdrop" onClick={() => setMoreOpen(false)}>
+          <div className="home-more-modal" onClick={e => e.stopPropagation()}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center"
+              }}
+            >
+              <strong style={{ fontSize: 15 }}>All apps</strong>
+              <button
+                type="button"
+                className="notes-btn"
+                onClick={() => setMoreOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--text-muted)",
+                marginTop: 4,
+                marginBottom: 4
+              }}
+            >
+              Games and extras — or open the Store
+            </div>
+            <div className="home-more-grid">
+              {homeMoreApps.map(a => tile(a))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 function Terminal({ openSite }) {
   const [input, setInput] = useState("");
@@ -8849,106 +8656,6 @@ function ImageCropModal({ src, mode, onCancel, onConfirm }) {
   );
 }
 
-
-function DesktopWallpaperApp() {
-  const [preview, setPreview] = useState(() =>
-    typeof DesktopWallpaper !== "undefined" ? DesktopWallpaper.get() : null
-  );
-  const [blur, setBlur] = useState(() => {
-    const g = typeof DesktopWallpaper !== "undefined" ? DesktopWallpaper.get() : null;
-    return g ? g.blur || 0 : 0;
-  });
-  const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
-
-  const applyLive = (dataUrl, blurVal) => {
-    try {
-      const next = DesktopWallpaper.set(dataUrl, blurVal);
-      setPreview(next);
-      setBlur(next.blur);
-      window.dispatchEvent(
-        new CustomEvent("browseros-desktop-wallpaper", { detail: next })
-      );
-    } catch (e) {
-      setErr((e && e.message) || "Could not save desktop wallpaper.");
-    }
-  };
-
-  const readFile = (file) => {
-    setErr("");
-    setMsg("");
-    if (!file || !file.type.startsWith("image/")) {
-      setErr("Choose an image file.");
-      return;
-    }
-    if (file.size > 1.8 * 1024 * 1024) {
-      setErr("Image too large (try under ~1.5 MB).");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      if (typeof dataUrl !== "string" || dataUrl.length > DesktopWallpaper.maxBytes) {
-        setErr("Image too large for storage.");
-        return;
-      }
-      applyLive(dataUrl, blur);
-      setMsg("Desktop wallpaper applied.");
-    };
-    reader.readAsDataURL(file);
-  };
-
-  return (
-    <div style={{ marginTop: 8 }}>
-      <div style={{ fontWeight: 800, marginBottom: 6 }}>Desktop wallpaper (VM shell)</div>
-      <p style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.45, marginTop: 0 }}>
-        Background behind the desktop icons after login. Separate from the in-tab content wallpaper.
-        Default is the BrowserOS gradient until you set a custom image.
-      </p>
-      <input
-        type="file"
-        accept="image/*"
-        onChange={e => readFile(e.target.files && e.target.files[0])}
-      />
-      <div style={{ marginTop: 10, fontSize: 12 }}>
-        Blur: {Math.round(blur * 100)}%
-        <input
-          type="range"
-          min={0}
-          max={1}
-          step={0.01}
-          value={blur}
-          onChange={e => {
-            const v = Number(e.target.value);
-            setBlur(v);
-            if (preview && preview.dataUrl) applyLive(preview.dataUrl, v);
-          }}
-          style={{ width: "100%" }}
-        />
-      </div>
-      <button
-        type="button"
-        className="notes-btn"
-        style={{ marginTop: 8 }}
-        onClick={() => {
-          DesktopWallpaper.clear();
-          setPreview(null);
-          setBlur(0);
-          window.dispatchEvent(
-            new CustomEvent("browseros-desktop-wallpaper", { detail: null })
-          );
-          setMsg("Reset to default BrowserOS desktop.");
-        }}
-      >
-        Reset desktop wallpaper
-      </button>
-      {msg && <div style={{ color: "var(--accent)", fontSize: 12, marginTop: 8 }}>{msg}</div>}
-      {err && <div style={{ color: "var(--danger)", fontSize: 12, marginTop: 8 }}>{err}</div>}
-    </div>
-  );
-}
-
-
 function WallpaperApp() {
   const [preview, setPreview] = useState(() => Wallpaper.get());
   const [blur, setBlur] = useState(() => (Wallpaper.get()?.blur ?? 0));
@@ -9855,14 +9562,7 @@ function Settings() {
         </div>
       </div>
 
-      <div style={{ ...cardStyle, marginTop: 16 }}>
-        <DesktopWallpaperApp />
-      </div>
       <div style={{ ...cardStyle, marginTop: 16, background: "transparent", border: "none", padding: 0 }}>
-        <div style={{ fontWeight: 800, marginBottom: 6 }}>Tab content wallpaper</div>
-        <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 0 }}>
-          Optional background inside browser tabs (separate from the desktop).
-        </p>
         <WallpaperApp />
       </div>
 
@@ -10219,51 +9919,6 @@ const Wallpaper = {
   }
 };
     
-
-const DesktopWallpaper = {
-  key: "browserOS_desktop_wallpaper",
-  maxBytes: 2.5 * 1024 * 1024,
-  get() {
-    try {
-      const raw = localStorage.getItem(this.key);
-      if (!raw) return null;
-      const data = JSON.parse(raw);
-      if (!data || !data.dataUrl) return null;
-      return {
-        dataUrl: data.dataUrl,
-        blur: Math.min(1, Math.max(0, Number(data.blur) || 0))
-      };
-    } catch (_) {
-      return null;
-    }
-  },
-  set(dataUrl, blur) {
-    const payload = {
-      dataUrl,
-      blur: Math.min(1, Math.max(0, Number(blur) || 0))
-    };
-    try {
-      localStorage.setItem(this.key, JSON.stringify(payload));
-    } catch (err) {
-      try {
-        localStorage.removeItem(this.key);
-        localStorage.setItem(this.key, JSON.stringify(payload));
-      } catch (e2) {
-        throw new Error("Browser storage is full. Use a smaller image.");
-      }
-    }
-    return payload;
-  },
-  setBlur(blur) {
-    const cur = this.get();
-    if (!cur) return null;
-    return this.set(cur.dataUrl, blur);
-  },
-  clear() {
-    localStorage.removeItem(this.key);
-  }
-};
-
 const DevMode = {
   key: "browserOS_dev",
 
@@ -21890,7 +21545,6 @@ function ProjectsApp({ openApp }) {
 /* ─── APPS REGISTRY ─── */
 const apps = {
   homepage:{title:"Home",icon:"🌐",component:({openApp})=><HomePage openApp={openApp}/>},
-  games:{title:"Games",icon:"🎮",component:({openApp})=><GamesApp openApp={openApp}/>},
   bouncyball:{title:"Bouncy Ball",icon:"🟣",component:BouncyBall},
     reactiontime:{
       title:"Reaction Time",
@@ -23522,11 +23176,11 @@ function App() {
 
    Never put the service_role key in this file.
    ───────────────────────────────────────────── */
-const BROWSEROS_VERSION = "1.2.0-desktop";
+const BROWSEROS_VERSION = "1.1.1-security";
 const BROWSEROS_CHANNEL = "stable";
 // Change BOTH version and this token on every critical release.
 // Server table browseros_app_config.min_build_token must match (or be empty to allow all).
-const BROWSEROS_BUILD_TOKEN = "bos_build_d2e9f1a4c7b80365e0d1a9f3c5b8e142";
+const BROWSEROS_BUILD_TOKEN = "bos_build_a1c4e8f2b9d60357e1a0c8d4f6b2e975";
 
 const BROWSEROS_SUPABASE = {
   url: "https://nthokwsumfutibmjevrz.supabase.co",
@@ -24182,14 +23836,13 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
   return (
     <div className="auth-screen">
       <form className="auth-card" onSubmit={submit}>
-        <div className="auth-lock-avatar" aria-hidden="true">🖥️</div>
         <div className="auth-logo">BrowserOS</div>
         <div className="auth-sub">
           {mode === "signin"
-            ? "Sign in to this computer"
+            ? "Sign in to continue"
             : mode === "reset"
             ? "Reset help"
-            : "Create an account"}
+            : "Request access"}
         </div>
         {revokeMessage && (
           <div className="auth-error" style={{ marginBottom: 12 }}>
@@ -26009,7 +25662,6 @@ function Root() {
   } catch (_) {}
   return <App />;
 }
-
 try {
   const rootEl = document.getElementById("root");
   if (!rootEl) throw new Error("#root element missing");
