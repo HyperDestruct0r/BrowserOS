@@ -2809,7 +2809,29 @@ html:not(.banner-motion-on) .profile-card-shell.deco-prism{
   color:var(--text-muted);
   border-top:1px solid var(--border);
 }
+
+.os-dock-show{
+  position:fixed;
+  left:50%;
+  bottom:10px;
+  transform:translateX(-50%);
+  z-index:90;
+  padding:6px 14px;
+  border-radius:999px;
+  border:1px solid var(--border2);
+  background:var(--chrome-bg);
+  color:var(--text-muted);
+  font-size:11px;
+  font-weight:700;
+  font-family:'Syne',sans-serif;
+  cursor:pointer;
+  backdrop-filter:blur(12px);
+  box-shadow:0 8px 24px rgba(0,0,0,0.3);
+}
+.os-dock-show:hover{color:var(--text);border-color:var(--border2)}
 .shell.has-dock .content{padding-bottom:72px}
+.shell.dock-hidden .content{padding-bottom:40px}
+
 @media (max-width:800px){
   .os-dock{bottom:8px;padding:6px 8px;gap:4px}
   .os-dock-btn{width:38px;height:38px;font-size:16px}
@@ -5527,7 +5549,7 @@ function OsStatusBar() {
         <span className="os-status-pill">Local shell</span>
       )}
       <span style={{ marginLeft: "auto", opacity: 0.75 }}>
-        ⌘/Ctrl+K launcher
+        ⌘⇧K / Ctrl+Shift+K launcher
       </span>
     </div>
   );
@@ -5610,14 +5632,14 @@ function OsAppLauncher({ open, onClose, onLaunch }) {
           ))}
         </div>
         <div className="os-launcher-hint">
-          Enter open · Esc close · Chat/Session Save need Nitro when signed in
+          Enter open · Esc close · Ctrl+Shift+K (⌘⇧K) opens launcher
         </div>
       </div>
     </div>
   );
 }
 
-function OsDock({ openApp, currentAppKey, onOpenLauncher }) {
+function OsDock({ openApp, currentAppKey, onOpenLauncher, onHide }) {
   const dockApps = [
     { key: "homepage", icon: "🌐", label: "Home" },
     { key: "notes", icon: "📝", label: "Notes" },
@@ -5631,7 +5653,7 @@ function OsDock({ openApp, currentAppKey, onOpenLauncher }) {
       <button
         type="button"
         className="os-dock-btn"
-        title="App launcher (Ctrl+K)"
+        title="App launcher (Ctrl+Shift+K)"
         onClick={onOpenLauncher}
       >
         🔍
@@ -5650,6 +5672,15 @@ function OsDock({ openApp, currentAppKey, onOpenLauncher }) {
           {a.icon}
         </button>
       ))}
+      <div className="os-dock-sep" />
+      <button
+        type="button"
+        className="os-dock-btn"
+        title="Hide dock (Ctrl+Shift+D)"
+        onClick={onHide}
+      >
+        ▾
+      </button>
     </div>
   );
 }
@@ -5720,13 +5751,6 @@ function HomePage({ openApp }) {
     >
       <div style={{ textAlign: "center", flexShrink: 0 }}>
         <div className="home-logo">BrowserOS</div>
-        <div className="home-sub">
-          Your personal mini-OS · v
-          {typeof BROWSEROS_VERSION !== "undefined" ? BROWSEROS_VERSION : "dev"}
-        </div>
-        <div style={{ marginTop: 10, fontSize: 12, color: "var(--text-muted)", maxWidth: 360, lineHeight: 1.45, marginLeft: "auto", marginRight: "auto" }}>
-          Single-file shell. Local apps work offline; Chat & account features need the internet.
-        </div>
       </div>
 
       <div className="home-grid">
@@ -7464,27 +7488,6 @@ function SnakeGame() {
 
   }, [dir, running, gameOver, food]);
 
-
-  useEffect(() => {
-    const onKey = (e) => {
-      const meta = e.metaKey || e.ctrlKey;
-      if (meta && (e.key === "k" || e.key === "K")) {
-        e.preventDefault();
-        setLauncherOpen(true);
-        return;
-      }
-      if (e.altKey && e.code === "Space") {
-        e.preventDefault();
-        setLauncherOpen(true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  /* ─────────────────────────────
-     🎨 RENDER
-  ───────────────────────────── */
 
   return (
 
@@ -21275,6 +21278,22 @@ function App() {
   /* ── Split view (side-by-side tabs) ── */
   const [splitId, setSplitId] = useState(null); // secondary tab id
   const [launcherOpen, setLauncherOpen] = useState(false);
+  const [dockVisible, setDockVisible] = useState(() => {
+    try {
+      return localStorage.getItem("browserOS_dock_hidden") !== "1";
+    } catch (_) {
+      return true;
+    }
+  });
+  const toggleDock = () => {
+    setDockVisible(v => {
+      const next = !v;
+      try {
+        localStorage.setItem("browserOS_dock_hidden", next ? "0" : "1");
+      } catch (_) {}
+      return next;
+    });
+  };
 
   /* ── Sandbox panel + JS warning ── */
   const [showSandboxPanel, setShowSandboxPanel] = useState(false);
@@ -21923,11 +21942,36 @@ function App() {
      🎨 RENDER
   ───────────────────────────── */
 
+  useEffect(() => {
+    const onKey = (e) => {
+      const meta = e.metaKey || e.ctrlKey;
+      // Ctrl/Cmd + Shift + K → launcher (Ctrl+K reserved by browser find-ish / extensions)
+      if (meta && e.shiftKey && (e.key === "k" || e.key === "K")) {
+        e.preventDefault();
+        setLauncherOpen(true);
+        return;
+      }
+      // Ctrl/Cmd + Shift + D → toggle dock
+      if (meta && e.shiftKey && (e.key === "d" || e.key === "D")) {
+        e.preventDefault();
+        setDockVisible(v => {
+          const next = !v;
+          try {
+            localStorage.setItem("browserOS_dock_hidden", next ? "0" : "1");
+          } catch (_) {}
+          return next;
+        });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const currentAppKey =
     tabs[cur] && tabs[cur].type === "internal" ? tabs[cur].data : null;
 
   return (
-    <div className="shell has-dock">
+    <div className={"shell" + (dockVisible ? " has-dock" : " dock-hidden")}>
       <NotificationHost />
       <OsAppLauncher
         open={launcherOpen}
@@ -21941,11 +21985,23 @@ function App() {
           }
         }}
       />
-      <OsDock
-        openApp={openApp}
-        currentAppKey={currentAppKey}
-        onOpenLauncher={() => setLauncherOpen(true)}
-      />
+      {dockVisible ? (
+        <OsDock
+          openApp={openApp}
+          currentAppKey={currentAppKey}
+          onOpenLauncher={() => setLauncherOpen(true)}
+          onHide={toggleDock}
+        />
+      ) : (
+        <button
+          type="button"
+          className="os-dock-show"
+          onClick={toggleDock}
+          title="Show dock (Ctrl+Shift+D)"
+        >
+          ▴ Dock
+        </button>
+      )}
 
       {/* DEV MODE INDICATOR (NEW) */}
       {devMode && (
