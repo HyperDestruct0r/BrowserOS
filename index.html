@@ -3031,10 +3031,27 @@ try {
 })();
 </script>
 
-<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Pinned CDN + SRI (supply-chain hardening). Bump hashes when upgrading versions. -->
+<script
+  src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+  integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"
+  crossorigin="anonymous"
+></script>
+<script
+  src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+  integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"
+  crossorigin="anonymous"
+></script>
+<script
+  src="https://unpkg.com/@babel/standalone@7.26.10/babel.min.js"
+  integrity="sha384-BcI7nduYchENm39cFMEVJXHEE7fwHONANyn/pY2YTa+BNtrWF2bKBZeI0wqVithi"
+  crossorigin="anonymous"
+></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"
+  integrity="sha384-YieCqqg9gQufX7+5HcFvCEg/n3KUEdl8/Jb+A6J0npf1mB740VayvwKjTrtCeUoy"
+  crossorigin="anonymous"
+></script>
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
@@ -9525,8 +9542,19 @@ function Settings() {
             admin, cloud session (requires network + Supabase).
           </div>
           <div style={{ marginTop: 6 }}>
-            <strong style={{ color: "var(--text)" }}>Security:</strong> roles & Nitro are
-            server-checked. Client integrity auto-ban is soft by default.
+            <strong style={{ color: "var(--text)" }}>Security:</strong> roles & Nitro prefer
+            server entitlements. Chat text is escaped. Custom .os apps run in a sandboxed
+            iframe (no same-origin). CDN scripts use SRI. Client integrity auto-ban is soft.
+          </div>
+          <div style={{ marginTop: 6 }}>
+            <strong style={{ color: "var(--text)" }}>Supply chain:</strong> only download
+            BrowserOS from the publisher (GitHub). This build token is{" "}
+            <code style={{ fontSize: 10 }}>
+              {typeof BROWSEROS_BUILD_TOKEN !== "undefined"
+                ? String(BROWSEROS_BUILD_TOKEN).slice(0, 18) + "…"
+                : "—"}
+            </code>
+            . Critical updates are enforced via Supabase min_build_token.
           </div>
           <div style={{ marginTop: 8, opacity: 0.85 }}>
             Product focus: expand the OS shell; freeze chat feature creep unless broken.
@@ -11535,23 +11563,41 @@ function isReservedOsSlug(slug) {
   return reserved.includes(s);
 }
 
+function sanitizeUserProjectHtml(html) {
+  let s = String(html || "");
+  // Remove executable / navigational embeds from the HTML pane (JS runs only via controlled runner)
+  s = s.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "");
+  s = s.replace(/<script\b[^>]*\/>/gi, "");
+  s = s.replace(/<iframe\b[^>]*>[\s\S]*?<\/iframe>/gi, "");
+  s = s.replace(/<iframe\b[^>]*\/?>/gi, "");
+  s = s.replace(/<object\b[^>]*>[\s\S]*?<\/object>/gi, "");
+  s = s.replace(/<embed\b[^>]*\/?>/gi, "");
+  s = s.replace(/<link\b[^>]*>/gi, "");
+  s = s.replace(/<meta\b[^>]*>/gi, "");
+  s = s.replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
+  s = s.replace(/javascript\s*:/gi, "");
+  return s || '<div id="root"></div>';
+}
+
 function buildUserProjectSrcDoc(project) {
   const css = project.css || "";
-  const html = project.html || '<div id="root"></div>';
+  const html = sanitizeUserProjectHtml(project.html || '<div id="root"></div>');
   const js = project.js || "";
-  // CSS: break out of style tags
-  const safeCss = String(css).replace(/<\/style/gi, "<\\/style");
-  // Embed user JS as JSON so quotes/newlines/script tags cannot break the runner
+  const safeCss = String(css)
+    .replace(/<\/style/gi, "<\\/style")
+    .replace(/@import\b/gi, "/*@import blocked*/");
   const userCodeJson = JSON.stringify(String(js));
 
+  // CSP: scripts only from this document + unpkg (React/Babel). No parent bridge secrets.
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://unpkg.com; style-src 'unsafe-inline'; img-src data: https: http:; font-src data: https:; connect-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js"><\/script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"><\/script>
-<script src="https://unpkg.com/@babel/standalone@7.26.5/babel.min.js"><\/script>
+<script src="https://unpkg.com/@babel/standalone@7.26.10/babel.min.js"><\/script>
 <style>
 html,body{margin:0;padding:0;min-height:100%;background:#0b0f14;color:#e8eef7;font-family:system-ui,sans-serif}
 ${safeCss}
@@ -11561,11 +11607,12 @@ ${safeCss}
 ${html}
 <script>
 (function () {
+  // Isolation: no access to parent BrowserOS state (null origin sandbox)
   function report(msg) {
     try {
       parent.postMessage({
         type: "bos-project-error",
-        message: String(msg || "Unknown error")
+        message: String(msg || "Unknown error").slice(0, 2000)
       }, "*");
     } catch (e) {}
   }
@@ -11594,8 +11641,6 @@ ${html}
         report("Babel failed to load. Check your network connection.");
         return;
       }
-
-      // Classic JSX runtime → React.createElement (no import statements)
       var result = window.Babel.transform(userCode, {
         presets: [
           ["react", { runtime: "classic", development: false }]
@@ -11603,7 +11648,6 @@ ${html}
         filename: "project.jsx",
         sourceType: "script"
       });
-
       var s = document.createElement("script");
       s.type = "text/javascript";
       s.text = result.code;
@@ -11613,7 +11657,6 @@ ${html}
     }
   }
 
-  // CDN scripts above are blocking; Babel should already be present
   if (window.Babel) {
     runUserCode();
   } else {
@@ -11710,6 +11753,7 @@ function UserProjectRunner({ project }) {
         key={frameKey}
         title={project.title || project.slug}
         sandbox="allow-scripts"
+        // no allow-same-origin → opaque origin; cannot read parent
         srcDoc={buildUserProjectSrcDoc(project)}
         style={{ flex: 1, width: "100%", height: "100%", border: "none", background: "#0b0f14" }}
       />
@@ -12657,6 +12701,24 @@ const ADMIN_SLASH_COMMANDS = [
   { cmd: "/clear", hint: "/clear", admin: false }
 ];
 
+function escapeHtmlText(s) {
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/** Strip any HTML tags left after formatting (defense in depth). */
+function stripResidualHtml(s) {
+  return String(s || "").replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, "");
+}
+
+/**
+ * Safe-ish markdown → React. Escapes user text first, only injects our own tags.
+ * Does not allow arbitrary HTML from chat messages.
+ */
 function renderMarkdownMessage(text) {
   const src = String(text || "");
   if (!src) return null;
@@ -12667,15 +12729,33 @@ function renderMarkdownMessage(text) {
   let k = 0;
   const pushInline = (chunk) => {
     if (!chunk) return;
-    // split by existing ping renderer path after basic md
-    let s = chunk;
-    s = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    let s = escapeHtmlText(chunk);
+    // Only wrap with tags we control; inner text is already escaped
     s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     s = s.replace(/(^|[^*])\*([^*]+)\*(?!\*)/g, "$1<em>$2</em>");
     s = s.replace(/~~([^~]+)~~/g, "<s>$1</s>");
-    s = s.replace(/`([^`]+)`/g, "<code style=\"background:rgba(0,0,0,0.35);padding:1px 5px;border-radius:4px;font-size:12px\">$1</code>");
-    // highlight @pings lightly
-    s = s.replace(/(@[A-Za-z0-9_@.-]+)/g, '<span class="chat-ping-mention">$1</span>');
+    s = s.replace(
+      /`([^`]+)`/g,
+      '<code style="background:rgba(0,0,0,0.35);padding:1px 5px;border-radius:4px;font-size:12px">$1</code>'
+    );
+    s = s.replace(
+      /(@[A-Za-z0-9_@.-]+)/g,
+      '<span class="chat-ping-mention">$1</span>'
+    );
+    // Reject any tag that is not in our allowlist (stops breakout via odd sequences)
+    s = s.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (full, name) => {
+      const n = String(name || "").toLowerCase();
+      if (
+        n === "strong" ||
+        n === "em" ||
+        n === "s" ||
+        n === "code" ||
+        n === "span"
+      ) {
+        return full;
+      }
+      return "";
+    });
     blocks.push(
       <span key={"t" + k++} dangerouslySetInnerHTML={{ __html: s }} />
     );
@@ -12737,6 +12817,16 @@ function isChatAdminAuthor(message, adminEmailSet) {
 
 
 function isStaffProfile(profile) {
+  // Prefer server entitlements when present (client flags alone are untrusted)
+  try {
+    const ent = typeof getServerEntitlements === "function" ? getServerEntitlements() : null;
+    if (ent && (ent.is_staff === true || ent.is_admin === true || ent.is_dev === true)) {
+      return true;
+    }
+    if (ent && ent.is_admin === false && ent.is_dev === false && ent.is_staff === false) {
+      return false;
+    }
+  } catch (_) {}
   const p = profile || window.__browserOSProfile;
   return !!(p && (p.is_dev || p.is_admin));
 }
@@ -13209,6 +13299,25 @@ const FREE_MAX_BOOKMARKS = 2;
 const PAID_MAX_TABS = 11;
 
 function hasProAccess(profile) {
+  // Server entitlements win when available (client-edited flags are untrusted)
+  try {
+    const ent = typeof getServerEntitlements === "function" ? getServerEntitlements() : null;
+    if (ent) {
+      if (ent.is_staff || ent.is_admin || ent.is_dev) return true;
+      if (ent.is_turbo === true || Number(ent.tier) >= 2) return true;
+      if (ent.is_nitro === true || Number(ent.tier) >= 1) return true;
+      // Explicit zeros from server → deny even if local profile was patched
+      if (
+        ent.is_nitro === false &&
+        ent.is_turbo === false &&
+        (ent.tier === 0 || ent.tier == null) &&
+        ent.is_admin === false &&
+        ent.is_dev === false
+      ) {
+        return false;
+      }
+    }
+  } catch (_) {}
   const p = profile || (typeof window !== "undefined" ? window.__browserOSProfile : null);
   if (!p) {
     try {
@@ -13218,13 +13327,11 @@ function hasProAccess(profile) {
     return false;
   }
   if (p.is_admin || p.is_dev) return true;
-  if (typeof isStaffProfile === "function" && isStaffProfile(p)) return true;
-  if (typeof isTurboUser === "function" && isTurboUser(p)) return true;
-  if (typeof isNitroUser === "function" && isNitroUser(p)) return true;
-  const t = parseInt(p.tier, 10);
-  if (!isNaN(t) && t >= 1) return true;
-  if (p.is_nitro || p.is_turbo) return true;
-  return false;
+  try {
+    if (typeof isNitroUser === "function" && isNitroUser(p)) return true;
+    if (typeof isTurboUser === "function" && isTurboUser(p)) return true;
+  } catch (_) {}
+  return !!(p.is_nitro || p.is_turbo || Number(p.tier) >= 1);
 }
 
 function maxTabsAllowed() {
@@ -23069,11 +23176,11 @@ function App() {
 
    Never put the service_role key in this file.
    ───────────────────────────────────────────── */
-const BROWSEROS_VERSION = "1.1.0-shell";
+const BROWSEROS_VERSION = "1.1.1-security";
 const BROWSEROS_CHANNEL = "stable";
 // Change BOTH version and this token on every critical release.
 // Server table browseros_app_config.min_build_token must match (or be empty to allow all).
-const BROWSEROS_BUILD_TOKEN = "bos_build_7f3a9c2e1b84d0f6a5e8c3b2917d4e60";
+const BROWSEROS_BUILD_TOKEN = "bos_build_a1c4e8f2b9d60357e1a0c8d4f6b2e975";
 
 const BROWSEROS_SUPABASE = {
   url: "https://nthokwsumfutibmjevrz.supabase.co",
@@ -25555,7 +25662,6 @@ function Root() {
   } catch (_) {}
   return <App />;
 }
-
 try {
   const rootEl = document.getElementById("root");
   if (!rootEl) throw new Error("#root element missing");
