@@ -22061,6 +22061,29 @@ const BROWSEROS_SUPABASE = {
 //   update profiles set is_admin = true, status = 'approved' where lower(email) = lower('you@email.com');
 const BROWSEROS_ADMIN_EMAILS = []; // unused — kept empty on purpose
 
+
+function browserOSAuthRedirectUrl() {
+  try {
+    // GitHub Pages / file host: stay on the same path, no hash
+    return String(window.location.href).split("#")[0].split("?")[0];
+  } catch (_) {
+    return "https://hyperdestruct0r.github.io/BrowserOS/";
+  }
+}
+
+function browserOSUrlLooksLikeAuthCallback() {
+  try {
+    const h = String(window.location.hash || "");
+    const s = String(window.location.search || "");
+    if (/access_token=|refresh_token=|type=recovery|type=signup|provider_token=/i.test(h)) {
+      return true;
+    }
+    if (/code=|error=/.test(s) && /oauth|auth/i.test(s + h)) return true;
+    if (/code=/.test(s)) return true;
+  } catch (_) {}
+  return false;
+}
+
 function isSupabaseConfigured() {
   return (
     BROWSEROS_SUPABASE.url &&
@@ -22430,7 +22453,7 @@ function PlanGateScreen({ profile, onActivated, onSignOut }) {
 }
 
 function AuthScreen({ onUnlock, onPending, revokeMessage }) {
-  const [mode, setMode] = useState("signin"); // signin | register | reset
+  const [mode, setMode] = useState("signin"); // signin | register | reset | setpw
   const [resetSent, setResetSent] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [email, setEmail] = useState("");
@@ -22439,11 +22462,111 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
   const [busy, setBusy] = useState(false);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [oauthSession, setOauthSession] = useState(null);
   const emailRef = useRef(null);
 
   useEffect(() => {
-    emailRef.current?.focus();
+    if (mode !== "setpw") emailRef.current?.focus();
   }, [mode]);
+
+  // Complete Google OAuth (or any provider) redirect → verified email
+  useEffect(() => {
+    const client = getSupabaseClient();
+    if (!client) return;
+    let cancelled = false;
+
+    const finishOauthSession = async (session) => {
+      if (!session || !session.user || cancelled) return;
+      const em = String(session.user.email || "").toLowerCase();
+      if (!em) {
+        setError("Google did not return an email. Use an account with an email address.");
+        await client.auth.signOut({ scope: "local" }).catch(() => {});
+        return;
+      }
+      setEmail(em);
+      // Clean tokens from the address bar
+      try {
+        const clean = browserOSAuthRedirectUrl();
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState({}, document.title, clean);
+        }
+      } catch (_) {}
+
+      let profile;
+      try {
+        profile = await ensureUserProfile(client, session.user);
+      } catch (err) {
+        setError(
+          (err && err.message) ||
+            "Signed in with Google, but profile setup failed. Check profiles trigger in Supabase."
+        );
+        return;
+      }
+      if (profile && profile._accessExpired) {
+        setError("Your BrowserOS access period has expired.");
+        await client.auth.signOut({ scope: "local" }).catch(() => {});
+        return;
+      }
+      // New / returning Google users: optionally set a BrowserOS password, then continue
+      const meta = (session.user.user_metadata || {});
+      const needsPw =
+        !meta.browseros_password_set &&
+        !(profile && (profile.is_admin || profile.is_dev));
+      // Always offer set-password on first Google path into register flow
+      if (needsPw || mode === "register") {
+        setOauthSession(session);
+        setMode("setpw");
+        setInfo(
+          "Google verified your email (" +
+            em +
+            "). Choose a BrowserOS password so you can also sign in without Google later."
+        );
+        setPassword("");
+        setPassword2("");
+        return;
+      }
+      if (profile.status === "approved" || profile.is_admin || profile.is_dev) {
+        onUnlock(session, profile);
+      } else if (profile.status === "rejected") {
+        setError("Your registration was rejected by an administrator.");
+        await client.auth.signOut({ scope: "local" }).catch(() => {});
+      } else {
+        onPending(profile);
+      }
+    };
+
+    (async () => {
+      try {
+        if (typeof browserOSUrlLooksLikeAuthCallback === "function" && browserOSUrlLooksLikeAuthCallback()) {
+          // Let supabase-js parse the URL
+          const { data, error: sErr } = await client.auth.getSession();
+          if (sErr) console.warn(sErr);
+          if (data && data.session) await finishOauthSession(data.session);
+        }
+      } catch (_) {}
+    })();
+
+    const { data: sub } = client.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session && session.user) {
+        const providers =
+          (session.user.app_metadata && session.user.app_metadata.providers) ||
+          [];
+        const isOauth =
+          (session.user.app_metadata && session.user.app_metadata.provider === "google") ||
+          (Array.isArray(providers) && providers.indexOf("google") >= 0);
+        if (isOauth) {
+          await finishOauthSession(session);
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+      try {
+        sub.subscription.unsubscribe();
+      } catch (_) {}
+    };
+  }, []);
 
   // Handle Supabase recovery link (type=recovery in URL hash/query)
   useEffect(() => {
@@ -22492,6 +22615,103 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
     setMode("signin");
   };
 
+  const startGoogle = async () => {
+    setError("");
+    setInfo("");
+    if (!isSupabaseConfigured()) {
+      setError("Auth is not configured.");
+      return;
+    }
+    const client = getSupabaseClient();
+    if (!client) {
+      setError("Supabase client failed to load.");
+      return;
+    }
+    setGoogleBusy(true);
+    try {
+      const redirectTo = browserOSAuthRedirectUrl();
+      const { error: oErr } = await client.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo,
+          queryParams: {
+            prompt: "select_account"
+          }
+        }
+      });
+      if (oErr) {
+        setError(
+          oErr.message ||
+            "Google sign-in failed. Enable the Google provider in Supabase (Authentication → Providers → Google)."
+        );
+        setGoogleBusy(false);
+      }
+      // Browser navigates away on success
+    } catch (err) {
+      setError((err && err.message) || "Google sign-in failed.");
+      setGoogleBusy(false);
+    }
+  };
+
+  const finishSetPassword = async () => {
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (password !== password2) {
+      setError("Passwords do not match.");
+      return;
+    }
+    const client = getSupabaseClient();
+    if (!client) return;
+    setBusy(true);
+    setError("");
+    try {
+      const { error: uErr } = await client.auth.updateUser({
+        password,
+        data: { browseros_password_set: true }
+      });
+      if (uErr) {
+        setError(uErr.message || "Could not set password.");
+        setBusy(false);
+        return;
+      }
+      const { data: sessionData } = await client.auth.getSession();
+      const session =
+        (sessionData && sessionData.session) || oauthSession;
+      if (!session || !session.user) {
+        setError("Session expired. Use Continue with Google again.");
+        setBusy(false);
+        setMode("register");
+        return;
+      }
+      let profile;
+      try {
+        profile = await ensureUserProfile(client, session.user);
+      } catch (err) {
+        setError((err && err.message) || "Profile setup failed.");
+        setBusy(false);
+        return;
+      }
+      setPassword("");
+      setPassword2("");
+      setOauthSession(null);
+      setBusy(false);
+      if (profile.status === "approved" || profile.is_admin || profile.is_dev) {
+        onUnlock(session, profile);
+      } else if (profile.status === "rejected") {
+        setError("Your registration was rejected by an administrator.");
+        await client.auth.signOut({ scope: "local" }).catch(() => {});
+        setMode("signin");
+      } else {
+        onPending(profile);
+      }
+    } catch (err) {
+      setError((err && err.message) || "Could not finish signup.");
+      setBusy(false);
+    }
+  };
+
   const submit = async (e) => {
     e && e.preventDefault && e.preventDefault();
     if (busy) return;
@@ -22499,6 +22719,15 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
     setInfo("");
     if (recoveryMode) {
       await updateRecoveredPassword();
+      return;
+    }
+    if (mode === "setpw") {
+      await finishSetPassword();
+      return;
+    }
+    // Register is Google-only — no manual email signup
+    if (mode === "register") {
+      await startGoogle();
       return;
     }
     setBusy(true);
@@ -22515,76 +22744,6 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
       }
 
       const trimmed = email.trim().toLowerCase();
-
-      if (mode === "register") {
-        if (password.length < 6) {
-          setError("Password must be at least 6 characters.");
-          return;
-        }
-        if (password !== password2) {
-          setError("Passwords do not match.");
-          return;
-        }
-
-        const { data, error: signUpError } = await client.auth.signUp({
-          email: trimmed,
-          password
-        });
-
-        if (signUpError) {
-          setError(signUpError.message || "Registration failed.");
-          return;
-        }
-
-        // Prefer server trigger to create profiles; also try client-side when session exists
-        if (data.user && data.session) {
-          try {
-            await ensureUserProfile(client, data.user);
-          } catch (_) {
-            /* trigger may have created it */
-          }
-        }
-
-        // With Confirm email OFF in Supabase, session is returned immediately.
-        // If session is null, the project still has email confirmation enabled.
-        if (!data.session) {
-          setInfo(
-            "Account created, but Supabase did not return a session. In Supabase go to Authentication → Providers → Email and turn OFF “Confirm email”, then confirm this user under Authentication → Users (⋯ → Confirm user). After that, sign in."
-          );
-          setMode("signin");
-          setPassword("");
-          setPassword2("");
-          return;
-        }
-
-        let profile;
-        try {
-          profile = await ensureUserProfile(client, data.user);
-        } catch (err) {
-          setError(
-            (err && err.message) ||
-              "Account created but profile setup failed. Run the profiles SQL + trigger in Supabase."
-          );
-          await client.auth.signOut({ scope: "local" }).catch(() => {});
-          return;
-        }
-
-        setPassword("");
-        setPassword2("");
-        if (profile._accessExpired) {
-          setError(
-            "Your BrowserOS access period has expired. Please contact an Admin or Developer to extend your trial."
-          );
-          await client.auth.signOut({ scope: "local" }).catch(() => {});
-          return;
-        }
-        if (profile.status === "approved" || profile.is_admin || profile.is_dev) {
-          onUnlock(data.session, profile);
-        } else {
-          onPending(profile);
-        }
-        return;
-      }
 
       // Password reset — no email (BrowserOS avoids Supabase mail rate limits)
       if (mode === "reset") {
@@ -22681,6 +22840,7 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
           </div>
         )}
 
+        {mode !== "setpw" && (
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           <button
             type="button"
@@ -22732,7 +22892,150 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
             Reset
           </button>
         </div>
+        )}
 
+        {mode === "register" && (
+          <div style={{ marginBottom: 14 }}>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5, marginBottom: 12 }}>
+              New accounts must use <strong style={{ color: "var(--text)" }}>Google</strong> so
+              the email is real and verified. After Google, you&apos;ll set a BrowserOS password.
+            </p>
+            <button
+              type="button"
+              className="auth-btn"
+              disabled={busy || googleBusy}
+              onClick={startGoogle}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid var(--border2)",
+                color: "var(--text)"
+              }}
+            >
+              <span style={{ fontSize: 16 }}>G</span>
+              {googleBusy ? "Redirecting to Google…" : "Continue with Google"}
+            </button>
+          </div>
+        )}
+
+        {mode === "setpw" && (
+          <div style={{ marginBottom: 8 }}>
+            <div className="auth-label">Verified email</div>
+            <input
+              className="auth-input"
+              type="email"
+              value={email}
+              readOnly
+              disabled
+              style={{ marginBottom: 12, opacity: 0.85 }}
+            />
+            <div className="auth-label">BrowserOS password</div>
+            <input
+              className="auth-input"
+              type="password"
+              autoComplete="new-password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="At least 6 characters"
+              disabled={busy}
+              style={{ marginBottom: 12 }}
+            />
+            <div className="auth-label">Confirm password</div>
+            <input
+              className="auth-input"
+              type="password"
+              autoComplete="new-password"
+              value={password2}
+              onChange={e => setPassword2(e.target.value)}
+              placeholder="Confirm password"
+              disabled={busy}
+            />
+            <button
+              className="auth-btn"
+              type="submit"
+              disabled={busy || !password || !password2}
+              style={{ marginTop: 14 }}
+            >
+              {busy ? "Saving…" : "Save password & continue"}
+            </button>
+            <button
+              type="button"
+              className="notes-btn"
+              style={{ width: "100%", marginTop: 8 }}
+              disabled={busy}
+              onClick={async () => {
+                // Skip password — continue with Google session only
+                const client = getSupabaseClient();
+                if (!client) return;
+                setBusy(true);
+                try {
+                  const { data: sessionData } = await client.auth.getSession();
+                  const session =
+                    (sessionData && sessionData.session) || oauthSession;
+                  if (!session) {
+                    setError("Session expired. Use Continue with Google again.");
+                    setBusy(false);
+                    return;
+                  }
+                  const profile = await ensureUserProfile(client, session.user);
+                  setBusy(false);
+                  if (profile.status === "approved" || profile.is_admin || profile.is_dev) {
+                    onUnlock(session, profile);
+                  } else {
+                    onPending(profile);
+                  }
+                } catch (err) {
+                  setError((err && err.message) || "Could not continue.");
+                  setBusy(false);
+                }
+              }}
+            >
+              Skip — use Google only
+            </button>
+          </div>
+        )}
+
+        {mode === "signin" && (
+          <>
+            <button
+              type="button"
+              className="auth-btn"
+              disabled={busy || googleBusy}
+              onClick={startGoogle}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+                marginBottom: 12,
+                background: "rgba(255,255,255,0.06)",
+                border: "1px solid var(--border2)",
+                color: "var(--text)"
+              }}
+            >
+              <span style={{ fontSize: 16 }}>G</span>
+              {googleBusy ? "Redirecting…" : "Continue with Google"}
+            </button>
+            <div
+              style={{
+                textAlign: "center",
+                fontSize: 11,
+                color: "var(--text-muted)",
+                marginBottom: 12,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase"
+              }}
+            >
+              or email + password
+            </div>
+          </>
+        )}
+
+        {(mode === "signin" || mode === "reset" || recoveryMode) && mode !== "setpw" && (
+          <>
         <div className="auth-label">Email</div>
         <input
           ref={emailRef}
@@ -22745,24 +23048,26 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
           disabled={busy}
           style={{ marginBottom: 12 }}
         />
+          </>
+        )}
 
-        {(mode !== "reset" || recoveryMode) && (
+        {((mode === "signin" && !recoveryMode) || recoveryMode) && mode !== "setpw" && (
           <>
         <div className="auth-label">{recoveryMode ? "New password" : "Password"}</div>
         <input
           className="auth-input"
           type="password"
-          autoComplete={mode === "register" || recoveryMode ? "new-password" : "current-password"}
+          autoComplete={recoveryMode ? "new-password" : "current-password"}
           value={password}
           onChange={e => setPassword(e.target.value)}
           placeholder={recoveryMode ? "New password" : "Password"}
           disabled={busy}
-          style={{ marginBottom: mode === "register" || recoveryMode ? 12 : 0 }}
+          style={{ marginBottom: recoveryMode ? 12 : 0 }}
         />
           </>
         )}
 
-        {(mode === "register" || recoveryMode) && (
+        {recoveryMode && (
           <>
             <div className="auth-label">Confirm password</div>
             <input
@@ -22777,24 +23082,25 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
           </>
         )}
 
+        {mode !== "register" && mode !== "setpw" && (
         <button
           className="auth-btn"
           type="submit"
           disabled={
             busy ||
-            !email.trim() ||
-            !password ||
-            (mode === "register" && !password2)
+            (mode === "reset" ? !email.trim() : !email.trim() || !password) ||
+            (recoveryMode && !password2)
           }
         >
           {busy
-            ? mode === "register"
-              ? "Submitting…"
-              : "Signing in…"
-            : mode === "register"
-              ? "Request access"
+            ? "Working…"
+            : mode === "reset"
+              ? "Request reset help"
+              : recoveryMode
+              ? "Update password"
               : "Sign in"}
         </button>
+        )}
         {error && <div className="auth-error">{error}</div>}
         {info && (
           <div style={{ marginTop: 12, fontSize: 12, color: "var(--accent)", lineHeight: 1.45 }}>
@@ -22803,8 +23109,10 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
         )}
         <div className="auth-hint">
           {mode === "register"
-            ? "New accounts stay pending until an admin approves them."
-            : "Approved accounts only. New here? Use Register."}
+            ? "Google verifies your email. New accounts stay pending until an admin approves them."
+            : mode === "setpw"
+            ? "Your email is locked to the Google account you just used."
+            : "Approved accounts only. New here? Register with Google."}
         </div>
       </form>
     </div>
@@ -24024,6 +24332,10 @@ function Root() {
   }, []);
 
   useEffect(() => {
+    // If this load is an OAuth / recovery redirect, keep tokens so Supabase can establish the session.
+    if (typeof browserOSUrlLooksLikeAuthCallback === "function" && browserOSUrlLooksLikeAuthCallback()) {
+      return;
+    }
     const client = getSupabaseClient();
     if (client) {
       client.auth.signOut({ scope: "local" }).catch(() => {});
