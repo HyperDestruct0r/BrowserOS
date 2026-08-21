@@ -22073,15 +22073,30 @@ function browserOSAuthRedirectUrl() {
 
 function browserOSUrlLooksLikeAuthCallback() {
   try {
+    if (sessionStorage.getItem("browserOS_oauth_pending") === "1") return true;
+  } catch (_) {}
+  try {
     const h = String(window.location.hash || "");
     const s = String(window.location.search || "");
-    if (/access_token=|refresh_token=|type=recovery|type=signup|provider_token=/i.test(h)) {
+    if (/access_token=|refresh_token=|type=recovery|type=signup|provider_token=|error_description=/i.test(h)) {
       return true;
     }
-    if (/code=|error=/.test(s) && /oauth|auth/i.test(s + h)) return true;
+    if (/access_token=|refresh_token=/.test(s)) return true;
     if (/code=/.test(s)) return true;
   } catch (_) {}
   return false;
+}
+
+function browserOSClearOauthPending() {
+  try {
+    sessionStorage.removeItem("browserOS_oauth_pending");
+  } catch (_) {}
+}
+
+function browserOSMarkOauthPending() {
+  try {
+    sessionStorage.setItem("browserOS_oauth_pending", "1");
+  } catch (_) {}
 }
 
 function isSupabaseConfigured() {
@@ -22131,20 +22146,18 @@ function getSupabaseClient() {
     return null;
   }
   if (!window.__browserOSSupabase) {
+    // OAuth (Google) needs detectSessionInUrl + real storage so the redirect
+    // hash/query can become a session. Root still forces a login screen on
+    // normal opens (non-callback) by signing out when appropriate.
     window.__browserOSSupabase = window.supabase.createClient(
       BROWSEROS_SUPABASE.url,
       BROWSEROS_SUPABASE.anonKey,
       {
         auth: {
-          // Require email/password on every full page load
-          persistSession: false,
-          autoRefreshToken: false,
-          detectSessionInUrl: false,
-          storage: {
-            getItem: () => null,
-            setItem: () => {},
-            removeItem: () => {}
-          }
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          flowType: "implicit"
         }
       }
     );
@@ -22470,33 +22483,39 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
     if (mode !== "setpw") emailRef.current?.focus();
   }, [mode]);
 
-  // Complete Google OAuth (or any provider) redirect → verified email
+  // Complete Google OAuth redirect → verified email → set password step
   useEffect(() => {
     const client = getSupabaseClient();
     if (!client) return;
     let cancelled = false;
+    let handled = false;
 
-    const finishOauthSession = async (session) => {
-      if (!session || !session.user || cancelled) return;
+    const finishOauthSession = async (session, forceSetPw) => {
+      if (!session || !session.user || cancelled || handled) return;
+      handled = true;
       const em = String(session.user.email || "").toLowerCase();
       if (!em) {
+        handled = false;
         setError("Google did not return an email. Use an account with an email address.");
         await client.auth.signOut({ scope: "local" }).catch(() => {});
+        browserOSClearOauthPending();
         return;
       }
       setEmail(em);
-      // Clean tokens from the address bar
+      setGoogleBusy(false);
       try {
         const clean = browserOSAuthRedirectUrl();
         if (window.history && window.history.replaceState) {
           window.history.replaceState({}, document.title, clean);
         }
       } catch (_) {}
+      browserOSClearOauthPending();
 
       let profile;
       try {
         profile = await ensureUserProfile(client, session.user);
       } catch (err) {
+        handled = false;
         setError(
           (err && err.message) ||
             "Signed in with Google, but profile setup failed. Check profiles trigger in Supabase."
@@ -22508,24 +22527,23 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
         await client.auth.signOut({ scope: "local" }).catch(() => {});
         return;
       }
-      // New / returning Google users: optionally set a BrowserOS password, then continue
+
       const meta = (session.user.user_metadata || {});
-      const needsPw =
-        !meta.browseros_password_set &&
-        !(profile && (profile.is_admin || profile.is_dev));
-      // Always offer set-password on first Google path into register flow
-      if (needsPw || mode === "register") {
+      const alreadyHasPw = !!meta.browseros_password_set;
+      // Always show set-password after Google until they've saved one (so email login works later)
+      if (forceSetPw || !alreadyHasPw) {
         setOauthSession(session);
         setMode("setpw");
         setInfo(
           "Google verified your email (" +
             em +
-            "). Choose a BrowserOS password so you can also sign in without Google later."
+            "). Set a BrowserOS password so you can sign in with email + password next time (or skip to use Google only)."
         );
         setPassword("");
         setPassword2("");
         return;
       }
+
       if (profile.status === "approved" || profile.is_admin || profile.is_dev) {
         onUnlock(session, profile);
       } else if (profile.status === "rejected") {
@@ -22536,27 +22554,56 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
       }
     };
 
-    (async () => {
+    const tryConsumeOAuth = async () => {
       try {
-        if (typeof browserOSUrlLooksLikeAuthCallback === "function" && browserOSUrlLooksLikeAuthCallback()) {
-          // Let supabase-js parse the URL
+        const pending =
+          typeof browserOSUrlLooksLikeAuthCallback === "function" &&
+          browserOSUrlLooksLikeAuthCallback();
+        if (!pending) return;
+
+        // Wait briefly for supabase-js to parse the URL hash
+        for (let i = 0; i < 8 && !cancelled; i++) {
           const { data, error: sErr } = await client.auth.getSession();
-          if (sErr) console.warn(sErr);
-          if (data && data.session) await finishOauthSession(data.session);
+          if (sErr) console.warn("oauth getSession", sErr);
+          if (data && data.session) {
+            await finishOauthSession(data.session, true);
+            return;
+          }
+          await new Promise(r => setTimeout(r, 200));
         }
-      } catch (_) {}
-    })();
+        // Still nothing — show a helpful error instead of a blank boot loop
+        if (!cancelled && !handled) {
+          setError(
+            "Google redirect returned, but no session was created. Check Supabase Google provider + redirect URLs (Site URL must be your GitHub Pages BrowserOS URL)."
+          );
+          browserOSClearOauthPending();
+        }
+      } catch (err) {
+        console.warn("oauth consume", err);
+        if (!cancelled) {
+          setError((err && err.message) || "OAuth complete failed.");
+          browserOSClearOauthPending();
+        }
+      }
+    };
+
+    tryConsumeOAuth();
 
     const { data: sub } = client.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_IN" && session && session.user) {
+      if (cancelled) return;
+      if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session && session.user) {
+        const provider =
+          (session.user.app_metadata && session.user.app_metadata.provider) || "";
         const providers =
-          (session.user.app_metadata && session.user.app_metadata.providers) ||
-          [];
+          (session.user.app_metadata && session.user.app_metadata.providers) || [];
         const isOauth =
-          (session.user.app_metadata && session.user.app_metadata.provider === "google") ||
+          provider === "google" ||
           (Array.isArray(providers) && providers.indexOf("google") >= 0);
-        if (isOauth) {
-          await finishOauthSession(session);
+        const pending =
+          typeof browserOSUrlLooksLikeAuthCallback === "function" &&
+          browserOSUrlLooksLikeAuthCallback();
+        if (isOauth || pending) {
+          await finishOauthSession(session, true);
         }
       }
     });
@@ -22630,12 +22677,14 @@ function AuthScreen({ onUnlock, onPending, revokeMessage }) {
     setGoogleBusy(true);
     try {
       const redirectTo = browserOSAuthRedirectUrl();
+      if (typeof browserOSMarkOauthPending === "function") browserOSMarkOauthPending();
       const { error: oErr } = await client.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo,
           queryParams: {
-            prompt: "select_account"
+            prompt: "select_account",
+            access_type: "online"
           }
         }
       });
