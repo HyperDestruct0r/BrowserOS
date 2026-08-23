@@ -2959,6 +2959,39 @@ html:not(.banner-motion-on) .profile-card-shell.deco-prism{
   .os-dock{bottom:8px;padding:6px 8px;gap:4px}
   .os-dock-btn{width:38px;height:38px;font-size:16px}
 }
+
+/* Desktop VM home */
+.desktop-surface{position:relative;width:100%;height:100%;min-height:100%;overflow:hidden;background:#0a0f1a}
+.desktop-bg-default,.desktop-bg-image{position:absolute;inset:0;z-index:0}
+.desktop-bg-default{background:radial-gradient(ellipse 70% 55% at 18% 15%, rgba(99,102,241,0.32), transparent 58%),radial-gradient(ellipse 55% 45% at 88% 78%, rgba(16,185,129,0.22), transparent 52%),linear-gradient(165deg, #07101c 0%, #0f172a 42%, #111827 100%)}
+.desktop-bg-default::after{content:"BrowserOS";position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);font-family:'Syne',system-ui,sans-serif;font-size:clamp(40px,8vw,72px);font-weight:800;letter-spacing:-0.04em;color:rgba(226,232,240,0.07);pointer-events:none;user-select:none}
+.desktop-bg-image{background-size:cover;background-position:center;background-repeat:no-repeat}
+.desktop-icons{position:absolute;z-index:2;top:12px;left:10px;bottom:52px;display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;gap:2px 16px;padding:4px;max-width:calc(100% - 20px);overflow:hidden;pointer-events:none}
+.desktop-icon{pointer-events:auto;width:78px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 6px;border:1px solid transparent;border-radius:4px;background:transparent;color:#fff;cursor:default;font-family:inherit;user-select:none}
+.desktop-icon:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.18)}
+.desktop-icon:focus{outline:none;background:rgba(59,130,246,0.28);border-color:rgba(147,197,253,0.5)}
+.desktop-icon-glyph{width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:36px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.45))}
+.desktop-icon-label{font-size:12px;font-weight:500;text-align:center;line-height:1.2;max-width:74px;color:#fff;text-shadow:0 0 4px rgba(0,0,0,0.95),0 1px 2px rgba(0,0,0,0.9);word-break:break-word}
+.desktop-taskbar{position:absolute;z-index:5;left:0;right:0;bottom:0;height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 6px;box-sizing:border-box;background:rgba(32,32,32,0.78);backdrop-filter:blur(28px) saturate(1.3);border-top:1px solid rgba(255,255,255,0.08)}
+.desktop-taskbar-left,.desktop-taskbar-right{display:flex;align-items:center;gap:2px;min-width:120px}
+.desktop-taskbar-right{justify-content:flex-end}
+.desktop-taskbar-center{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px}
+.desktop-tb-btn{width:40px;height:40px;border:none;border-radius:8px;background:transparent;color:#eee;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.desktop-tb-btn:hover{background:rgba(255,255,255,0.1)}
+.desktop-tb-clock{text-align:right;padding:4px 12px;border-radius:6px;color:#f3f3f3;font-size:12px;line-height:1.25;font-weight:500;font-variant-numeric:tabular-nums}
+.desktop-tb-tray{display:flex;align-items:center;gap:10px;padding:0 8px;color:rgba(243,243,243,0.92);font-size:13px}
+.desktop-wp-box{border:1px solid var(--border2);border-radius:14px;padding:16px;background:var(--surface)}
+.desktop-wp-box .drop{border:2px dashed var(--border2);border-radius:12px;padding:28px 16px;text-align:center;color:var(--text-muted);font-size:13px;cursor:pointer}
+.desktop-wp-box .drop:hover,.desktop-wp-box .drop.on{border-color:var(--accent);background:rgba(110,231,183,0.06)}
+.desktop-wp-preview{width:100%;height:110px;border-radius:10px;margin-top:12px;background-size:cover;background-position:center;border:1px solid var(--border)}
+.games-hub{padding:20px;height:100%;overflow:auto;box-sizing:border-box}
+.games-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-top:14px}
+.games-card{border:1px solid var(--border2);border-radius:14px;background:var(--surface);padding:16px 12px;cursor:pointer;text-align:center;font-family:inherit;color:var(--text)}
+.games-card:hover{border-color:var(--accent)}
+.games-card .gi{font-size:32px;margin-bottom:8px}
+.games-card .gn{font-weight:800;font-size:13px}
+.games-card .gd{font-size:11px;color:var(--text-muted);margin-top:4px}
+
 </style>
 
 
@@ -6180,139 +6213,160 @@ const homeMoreApps = [
   { key: "admin", icon: "🛡️", label: "Admin" }
 ];
     
+function DesktopWallpaperLayer() {
+  const [wp, setWp] = useState(() =>
+    typeof DesktopWallpaper !== "undefined" ? DesktopWallpaper.get() : null
+  );
+  useEffect(() => {
+    const on = e => setWp(e.detail !== undefined ? e.detail : (DesktopWallpaper && DesktopWallpaper.get()));
+    window.addEventListener("browseros-desktop-wallpaper", on);
+    return () => window.removeEventListener("browseros-desktop-wallpaper", on);
+  }, []);
+  if (wp && wp.dataUrl) {
+    return (
+      <div
+        className="desktop-bg-image"
+        style={{
+          backgroundImage: "url(" + wp.dataUrl + ")",
+          filter: wp.blur ? "blur(" + wp.blur * 16 + "px)" : undefined,
+          transform: wp.blur ? "scale(1.05)" : undefined
+        }}
+      />
+    );
+  }
+  return <div className="desktop-bg-default" aria-hidden="true" />;
+}
+
+function GamesApp({ openApp }) {
+  const games = [
+    { key: "play2048", icon: "🟨", name: "2048", desc: "Merge tiles" },
+    { key: "snake", icon: "🐍", name: "Snake", desc: "Classic crawl" },
+    { key: "flappybird", icon: "🐤", name: "Flappy Bird", desc: "Tap to fly" },
+    { key: "bouncyball", icon: "🟣", name: "Bouncy Ball", desc: "Physics toy" },
+    { key: "reactiontime", icon: "⚡", name: "Reaction", desc: "Test speed" },
+    { key: "aimtrainer", icon: "🎯", name: "Aim Trainer", desc: "Click targets" },
+    { key: "leaderboard", icon: "🏆", name: "Leaderboard", desc: "Scores" }
+  ];
+  return (
+    <div className="games-hub internal">
+      <h2 style={{ margin: "0 0 4px", fontSize: 18, fontWeight: 800 }}>Games</h2>
+      <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>Choose a game to open</p>
+      <div className="games-grid">
+        {games.map(g => (
+          <button key={g.key} type="button" className="games-card" onClick={() => openApp && openApp(g.key)}>
+            <div className="gi">{g.icon}</div>
+            <div className="gn">{g.name}</div>
+            <div className="gd">{g.desc}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function HomePage({ openApp }) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const [sleepInfo, setSleepInfo] = useState(() => getSleepSession());
+  const [now, setNow] = useState(() => new Date());
+  const [online, setOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine !== false : true
+  );
+  const [sleepInfo, setSleepInfo] = useState(() =>
+    typeof getSleepSession === "function" ? getSleepSession() : null
+  );
   const [msg, setMsg] = useState("");
 
-  const launch = key => {
-    setMoreOpen(false);
-    if (openApp) openApp(key);
-  };
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 15000);
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    return () => {
+      clearInterval(t);
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    };
+  }, []);
 
-  const tile = (a, extraClass) => (
-    <button
-      key={a.key}
-      type="button"
-      className={"home-app" + (extraClass ? " " + extraClass : "")}
-      onClick={() => launch(a.key)}
-    >
-      <div className="icon" aria-hidden="true">
-        {a.icon}
-      </div>
-      <div className="label">{a.label}</div>
-    </button>
-  );
+  const launch = key => openApp && openApp(key);
+
+  const desktopApps = [
+    { key: "search", icon: "🌐", label: "Browser" },
+    { key: "terminal", icon: "⌨️", label: "Terminal" },
+    { key: "chat", icon: "💬", label: "Chat" },
+    { key: "notes", icon: "📝", label: "Notes" },
+    { key: "projects", icon: "🧩", label: "Projects" },
+    { key: "games", icon: "🎮", label: "Games" },
+    { key: "settings", icon: "⚙️", label: "Settings" },
+    { key: "store", icon: "🛍️", label: "Store" },
+    { key: "history", icon: "🕒", label: "History" },
+    { key: "sessionsave", icon: "💾", label: "Session" }
+  ];
+
+  const timeStr = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const dateStr = now.toLocaleDateString([], { month: "numeric", day: "numeric", year: "numeric" });
 
   const doSleep = () => {
     window.dispatchEvent(new CustomEvent("browseros-sleep-session"));
     setTimeout(() => {
-      setSleepInfo(getSleepSession());
-      setMsg("Session saved — you can resume later.");
-      setTimeout(() => setMsg(""), 2500);
+      setSleepInfo(typeof getSleepSession === "function" ? getSleepSession() : null);
+      setMsg("Session slept");
+      setTimeout(() => setMsg(""), 2000);
     }, 50);
   };
   const doResume = () => {
     window.dispatchEvent(new CustomEvent("browseros-resume-session"));
     setTimeout(() => {
-      setSleepInfo(getSleepSession());
-      setMsg("Session restored.");
+      setSleepInfo(typeof getSleepSession === "function" ? getSleepSession() : null);
+      setMsg("Session resumed");
       setTimeout(() => setMsg(""), 2000);
     }, 80);
   };
 
   return (
-    <div
-      className="home internal"
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        height: "100%",
-        minHeight: "100%",
-        padding: "48px 16px 40px",
-        boxSizing: "border-box",
-        overflowY: "auto",
-        gap: 40
-      }}
-    >
-      <div style={{ textAlign: "center", flexShrink: 0 }}>
-        <div className="home-logo">BrowserOS</div>
-        <div className="home-session-row">
-          <button type="button" className="home-session-btn" onClick={doSleep} title="Save current tabs for later">
-            💤 Sleep session
-          </button>
+    <div className="desktop-surface home internal">
+      <DesktopWallpaperLayer />
+      <div className="desktop-icons">
+        {desktopApps.map(a => (
           <button
+            key={a.key}
             type="button"
-            className={"home-session-btn" + (sleepInfo ? " primary" : "")}
-            onClick={doResume}
-            disabled={!sleepInfo}
-            title={sleepInfo ? "Restore saved tabs" : "No slept session yet"}
-            style={!sleepInfo ? { opacity: 0.45, cursor: "not-allowed" } : undefined}
+            className="desktop-icon"
+            title={a.label}
+            onClick={() => launch(a.key)}
           >
-            ▶️ Resume{sleepInfo && sleepInfo.tabs ? " (" + sleepInfo.tabs.length + ")" : ""}
+            <span className="desktop-icon-glyph" aria-hidden="true">{a.icon}</span>
+            <span className="desktop-icon-label">{a.label}</span>
           </button>
+        ))}
+      </div>
+      <div className="desktop-taskbar">
+        <div className="desktop-taskbar-left">
+          <button type="button" className="desktop-tb-btn" title="Store" onClick={() => launch("store")}>⊞</button>
+          <button type="button" className="desktop-tb-btn" title="Browser" onClick={() => launch("search")}>🌐</button>
+          <button type="button" className="desktop-tb-btn" title="Notes" onClick={() => launch("notes")}>📁</button>
         </div>
-        {msg && (
-          <div style={{ marginTop: 8, fontSize: 12, color: "var(--accent)" }}>{msg}</div>
-        )}
-      </div>
-
-      <div className="home-grid">
-        {homePinnedApps.map(a => tile(a))}
-        <button
-          type="button"
-          className="home-app more-dots"
-          onClick={() => setMoreOpen(true)}
-          title="All apps"
-        >
-          <div className="icon" aria-hidden="true">
-            ···
+        <div className="desktop-taskbar-center">
+          <button type="button" className="desktop-tb-btn" title="Terminal" onClick={() => launch("terminal")}>⌨️</button>
+          <button type="button" className="desktop-tb-btn" title="Chat" onClick={() => launch("chat")}>💬</button>
+          <button type="button" className="desktop-tb-btn" title="Games" onClick={() => launch("games")}>🎮</button>
+          <button type="button" className="desktop-tb-btn" title="Settings" onClick={() => launch("settings")}>⚙️</button>
+          <button type="button" className="desktop-tb-btn" title="Sleep" onClick={doSleep}>💤</button>
+          <button type="button" className="desktop-tb-btn" title="Resume" onClick={doResume} style={!sleepInfo ? { opacity: 0.4 } : undefined}>▶️</button>
+        </div>
+        <div className="desktop-taskbar-right">
+          <div className="desktop-tb-tray" title={online ? "Online" : "Offline"}>
+            <span>{online ? "📶" : "📴"}</span>
+            {msg ? <span style={{ fontSize: 11 }}>{msg}</span> : null}
           </div>
-          <div className="label">More</div>
-        </button>
-      </div>
-
-      {moreOpen && (
-        <div className="home-more-backdrop" onClick={() => setMoreOpen(false)}>
-          <div className="home-more-modal" onClick={e => e.stopPropagation()}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center"
-              }}
-            >
-              <strong style={{ fontSize: 15 }}>All apps</strong>
-              <button
-                type="button"
-                className="notes-btn"
-                onClick={() => setMoreOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-            <div
-              style={{
-                fontSize: 12,
-                color: "var(--text-muted)",
-                marginTop: 4,
-                marginBottom: 4
-              }}
-            >
-              Games and extras — or open the Store
-            </div>
-            <div className="home-more-grid">
-              {homeMoreApps.map(a => tile(a))}
-            </div>
+          <div className="desktop-tb-clock">
+            <div>{timeStr}</div>
+            <div style={{ opacity: 0.9 }}>{dateStr}</div>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }
-
 
 function Terminal({ openSite }) {
   const [input, setInput] = useState("");
@@ -8656,6 +8710,50 @@ function ImageCropModal({ src, mode, onCancel, onConfirm }) {
   );
 }
 
+
+function DesktopWallpaperApp() {
+  const [preview, setPreview] = useState(() => typeof DesktopWallpaper !== "undefined" ? DesktopWallpaper.get() : null);
+  const [blur, setBlur] = useState(() => { try { const g = DesktopWallpaper.get(); return g ? g.blur || 0 : 0; } catch (_) { return 0; } });
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  const [drag, setDrag] = useState(false);
+  const apply = (dataUrl, blurVal) => {
+    try {
+      const next = DesktopWallpaper.set(dataUrl, blurVal);
+      setPreview(next); setBlur(next.blur);
+      window.dispatchEvent(new CustomEvent("browseros-desktop-wallpaper", { detail: next }));
+      setMsg("Desktop wallpaper updated"); setErr("");
+    } catch (e) { setErr((e && e.message) || "Save failed"); }
+  };
+  const readFile = file => {
+    if (!file || !String(file.type || "").startsWith("image/")) { setErr("Please choose an image"); return; }
+    if (file.size > 1.8 * 1024 * 1024) { setErr("Image too large"); return; }
+    const reader = new FileReader();
+    reader.onload = () => { if (typeof reader.result === "string") apply(reader.result, blur); };
+    reader.readAsDataURL(file);
+  };
+  return (
+    <div className="desktop-wp-box">
+      <div style={{ fontWeight: 800, marginBottom: 4 }}>Desktop wallpaper</div>
+      <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 12 }}>Background behind desktop icons (separate from tab wallpaper).</div>
+      <div className={"drop" + (drag ? " on" : "")}
+        onDragOver={e => { e.preventDefault(); setDrag(true); }}
+        onDragLeave={() => setDrag(false)}
+        onDrop={e => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files && e.dataTransfer.files[0]; if (f) readFile(f); }}
+        onClick={() => { const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.onchange = () => readFile(inp.files && inp.files[0]); inp.click(); }}>
+        Drop an image here or click to browse
+      </div>
+      {preview && preview.dataUrl && <div className="desktop-wp-preview" style={{ backgroundImage: "url(" + preview.dataUrl + ")" }} />}
+      <div style={{ marginTop: 12, fontSize: 12 }}>Blur {Math.round(blur * 100)}%
+        <input type="range" min={0} max={1} step={0.01} value={blur} onChange={e => { const v = Number(e.target.value); setBlur(v); if (preview && preview.dataUrl) apply(preview.dataUrl, v); }} style={{ width: "100%", marginTop: 4 }} />
+      </div>
+      <button type="button" className="notes-btn" style={{ marginTop: 10 }} onClick={() => { DesktopWallpaper.clear(); setPreview(null); setBlur(0); window.dispatchEvent(new CustomEvent("browseros-desktop-wallpaper", { detail: null })); setMsg("Reset to default"); }}>Use default BrowserOS background</button>
+      {msg && <div style={{ marginTop: 8, fontSize: 12, color: "var(--accent)" }}>{msg}</div>}
+      {err && <div style={{ marginTop: 8, fontSize: 12, color: "var(--danger)" }}>{err}</div>}
+    </div>
+  );
+}
+
 function WallpaperApp() {
   const [preview, setPreview] = useState(() => Wallpaper.get());
   const [blur, setBlur] = useState(() => (Wallpaper.get()?.blur ?? 0));
@@ -9563,6 +9661,9 @@ function Settings() {
       </div>
 
       <div style={{ ...cardStyle, marginTop: 16, background: "transparent", border: "none", padding: 0 }}>
+        <DesktopWallpaperApp />
+        <div style={{ height: 14 }} />
+        <div style={{ fontWeight: 700, marginBottom: 6, fontSize: 13 }}>Tab wallpaper</div>
         <WallpaperApp />
       </div>
 
@@ -9919,6 +10020,27 @@ const Wallpaper = {
   }
 };
     
+const DesktopWallpaper = {
+  key: "browserOS_desktop_wallpaper",
+  maxBytes: 2.5 * 1024 * 1024,
+  get() {
+    try {
+      const raw = localStorage.getItem(this.key);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !data.dataUrl) return null;
+      return { dataUrl: data.dataUrl, blur: Math.min(1, Math.max(0, Number(data.blur) || 0)) };
+    } catch (_) { return null; }
+  },
+  set(dataUrl, blur) {
+    const payload = { dataUrl, blur: Math.min(1, Math.max(0, Number(blur) || 0)) };
+    localStorage.setItem(this.key, JSON.stringify(payload));
+    return payload;
+  },
+  clear() { localStorage.removeItem(this.key); }
+};
+
+
 const DevMode = {
   key: "browserOS_dev",
 
@@ -12931,14 +13053,6 @@ function applyProfileExpirations(profile, client) {
   if (isNitroExpired(out) && out.is_nitro) {
     out.is_nitro = false;
     out._nitroExpiredToast = true;
-    if (client && out.user_id) {
-      client
-        .from("profiles")
-        .update({ is_nitro: false })
-        .eq("user_id", out.user_id)
-        .then(() => {})
-        .catch(() => {});
-    }
   }
   if (isAccessExpired(out)) {
     out._accessExpired = true;
@@ -13228,28 +13342,31 @@ function startBrowserOSIntegrityMonitor() {
 function serverAllowsOsAccess() {
   const ent = getServerEntitlements();
   const p = window.__browserOSProfile;
-  if (p && (p.is_admin || p.is_dev)) return true;
-  if (typeof isAccessExpired === "function" && isAccessExpired(p)) return false;
-  // Free tier: approved signup is enough (no paid activation required)
-  if (p && p.status === "approved") return true;
   if (ent) {
     if (ent.is_staff || ent.is_admin || ent.is_dev) return true;
     if (ent.access_expired) return false;
+    if (typeof ent.can_use_os === "boolean") return !!ent.can_use_os;
     if (ent.approved || ent.status === "approved") return true;
-    if (ent.can_use_os) return true;
   }
+  if (typeof isAccessExpired === "function" && isAccessExpired(p)) return false;
+  if (p && p.status === "approved") return true;
   return false;
 }
 
 
 function getUserTier(profile) {
   const ent = getServerEntitlements();
-  if (ent && typeof ent.tier === "number") {
-    return Math.min(2, Math.max(0, ent.tier | 0));
+  if (ent) {
+    if (ent.is_staff || ent.is_admin || ent.is_dev) return 2;
+    if (typeof ent.tier === "number") {
+      return Math.min(2, Math.max(0, ent.tier | 0));
+    }
+    if (ent.is_turbo === true) return 2;
+    if (ent.is_nitro === true) return 1;
+    if (ent.is_turbo === false && ent.is_nitro === false) return 0;
   }
   const p = profile || window.__browserOSProfile;
   if (!p) return 0;
-  if (p.is_dev || p.is_admin) return 2;
   const t = parseInt(p.tier, 10);
   if (!isNaN(t) && t >= 0) return Math.min(2, Math.max(0, t));
   if (p.is_turbo) return 2;
@@ -13259,7 +13376,13 @@ function getUserTier(profile) {
 
 function isNitroUser(profile) {
   const ent = getServerEntitlements();
-  if (ent && typeof ent.is_nitro === "boolean") return !!ent.is_nitro || getUserTier(profile) >= 1;
+  if (ent) {
+    if (ent.is_staff || ent.is_admin || ent.is_dev) return true;
+    if (typeof ent.tier === "number") return (ent.tier | 0) >= 1;
+    if (typeof ent.is_nitro === "boolean" || typeof ent.is_turbo === "boolean") {
+      return !!ent.is_nitro || !!ent.is_turbo;
+    }
+  }
   return getUserTier(profile) >= 1;
 }
 
@@ -13287,7 +13410,11 @@ function resolveStaffRoleTag(pref, isDev, isAdmin) {
 
 function isTurboUser(profile) {
   const ent = getServerEntitlements();
-  if (ent && typeof ent.is_turbo === "boolean") return !!ent.is_turbo || getUserTier(profile) >= 2;
+  if (ent) {
+    if (ent.is_staff || ent.is_admin || ent.is_dev) return true;
+    if (typeof ent.tier === "number") return (ent.tier | 0) >= 2;
+    if (typeof ent.is_turbo === "boolean") return !!ent.is_turbo;
+  }
   return getUserTier(profile) >= 2;
 }
 
@@ -14068,17 +14195,8 @@ function ChatAppInner({ openApp }) {
       .order("created_at", { ascending: false })
       .limit(take);
     if (error) {
-      const fallback = await client
-        .from("chat_messages")
-        .select(CHAT_MSG_SELECT)
-        .order("created_at", { ascending: false })
-        .limit(take * 2);
-      if (fallback.error) return { data: [], error: fallback.error, hasMore: false };
-      const filtered = (fallback.data || [])
-        .filter(m => String(m.channel || "general") === room)
-        .slice(0, take);
-      const rows = filtered.slice().reverse();
-      return { data: rows, error: null, hasMore: filtered.length >= take };
+      console.warn("chat load for channel failed:", room, error.message || error);
+      return { data: [], error: error, hasMore: false };
     }
     const newestFirst = (data || []).filter(
       m => String(m.channel || "general") === room
@@ -21545,6 +21663,7 @@ function ProjectsApp({ openApp }) {
 /* ─── APPS REGISTRY ─── */
 const apps = {
   homepage:{title:"Home",icon:"🌐",component:({openApp})=><HomePage openApp={openApp}/>},
+  games:{title:"Games",icon:"🎮",component:({openApp})=><GamesApp openApp={openApp}/>},
   bouncyball:{title:"Bouncy Ball",icon:"🟣",component:BouncyBall},
     reactiontime:{
       title:"Reaction Time",
@@ -23176,11 +23295,11 @@ function App() {
 
    Never put the service_role key in this file.
    ───────────────────────────────────────────── */
-const BROWSEROS_VERSION = "1.1.1-security";
+const BROWSEROS_VERSION = "1.3.0-security+";
 const BROWSEROS_CHANNEL = "stable";
 // Change BOTH version and this token on every critical release.
 // Server table browseros_app_config.min_build_token must match (or be empty to allow all).
-const BROWSEROS_BUILD_TOKEN = "bos_build_a1c4e8f2b9d60357e1a0c8d4f6b2e975";
+const BROWSEROS_BUILD_TOKEN = "bos_build_4dec52fa437a5d62805bac2988868ae3d36c400a";
 
 const BROWSEROS_SUPABASE = {
   url: "https://nthokwsumfutibmjevrz.supabase.co",
@@ -24197,14 +24316,15 @@ function AdminApprovalsApp() {
       )
     );
     let uErr = null;
-    if (email) {
+    if (!email) {
+      uErr = { message: "Missing user email — cannot change status without server RPC." };
+    } else {
       let res = await client.rpc("admin_set_status", {
         target_email: email,
         new_status: status,
         access_expires_at: accessIso
       });
       uErr = res.error;
-      // Fallback older 2-arg RPC
       if (uErr) {
         res = await client.rpc("admin_set_status", {
           target_email: email,
@@ -24212,26 +24332,16 @@ function AdminApprovalsApp() {
         });
         uErr = res.error;
         if (!uErr && accessIso) {
-          await client
-            .from("profiles")
-            .update({ access_expires_at: accessIso })
-            .eq("user_id", userId);
+          const exp = await client.rpc("admin_set_expiry", {
+            target_email: email,
+            access_expires_at: accessIso,
+            nitro_expires_at: null,
+            set_access: true,
+            set_nitro: false
+          });
+          if (exp.error) console.warn("admin_set_expiry:", exp.error.message || exp.error);
         }
       }
-    }
-    if (uErr || !email) {
-      const patch = { status };
-      if (status === "approved" && accessIso) patch.access_expires_at = accessIso;
-      if (status === "rejected") {
-        patch.is_admin = false;
-        patch.access_expires_at = null;
-      }
-      const { error } = await client
-        .from("profiles")
-        .update(patch)
-        .eq("user_id", userId);
-      if (error) uErr = error;
-      else uErr = null;
     }
     setBusyId(null);
     if (uErr) {
@@ -24272,7 +24382,6 @@ function AdminApprovalsApp() {
       payload.is_nitro = true;
       payload.nitro_expires_at = null;
     }
-    // Prefer RPC
     const { error: rpcErr } = await client.rpc("admin_set_expiry", {
       target_email: row.email,
       access_expires_at: kind === "access" ? iso : null,
@@ -24281,15 +24390,12 @@ function AdminApprovalsApp() {
       set_nitro: kind === "nitro"
     });
     if (rpcErr) {
-      const { error } = await client
-        .from("profiles")
-        .update(payload)
-        .eq("user_id", userId);
-      if (error) {
-        setBusyId(null);
-        setError(error.message || "Could not set expiry.");
-        return;
-      }
+      setBusyId(null);
+      setError(
+        (rpcErr.message || "Could not set expiry.") +
+          " Server authorization required — direct profile writes are disabled."
+      );
+      return;
     }
     setBusyId(null);
     setInfo("Updated " + kind + " expiry for " + row.email);
@@ -24316,13 +24422,22 @@ function AdminApprovalsApp() {
     setInfo("");
     setError("");
     const client = getSupabaseClient();
-    const { error: uErr } = await client
-      .from("profiles")
-      .update({ status: "rejected", is_admin: false })
-      .eq("user_id", row.user_id);
+    let uErr = null;
+    if (row.email) {
+      const res = await client.rpc("admin_set_status", {
+        target_email: row.email,
+        new_status: "rejected"
+      });
+      uErr = res.error;
+    } else {
+      uErr = { message: "Missing email — cannot remove without server RPC." };
+    }
     setBusyId(null);
     if (uErr) {
-      setError(uErr.message || "Remove failed.");
+      setError(
+        (uErr.message || "Remove failed.") +
+          " Direct profile privilege writes are disabled."
+      );
       return;
     }
     setInfo("Removed " + (row.email || "member") + " (status: rejected).");
