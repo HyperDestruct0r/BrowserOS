@@ -2992,6 +2992,89 @@ html:not(.banner-motion-on) .profile-card-shell.deco-prism{
 .games-card .gn{font-weight:800;font-size:13px}
 .games-card .gd{font-size:11px;color:var(--text-muted);margin-top:4px}
 
+
+/* ── BrowserOS Arcade ── */
+.arcade-root{height:100%;overflow:auto;padding:16px 18px 28px;box-sizing:border-box}
+.arcade-hero{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:18px}
+.arcade-title{font-size:22px;font-weight:800;letter-spacing:-0.02em}
+.arcade-sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+.arcade-xp{min-width:180px}
+.arcade-xp-bar{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden;margin-top:6px}
+.arcade-xp-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+.arcade-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:12px 0 20px}
+.arcade-card{
+  border:1px solid var(--border2);border-radius:14px;background:var(--surface);
+  padding:16px 12px;text-align:center;cursor:pointer;font-family:inherit;color:var(--text);
+  transition:border-color .15s, transform .15s;
+}
+.arcade-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.arcade-card .ai{font-size:28px;margin-bottom:8px}
+.arcade-card .an{font-weight:800;font-size:13px}
+.arcade-card .ad{font-size:11px;color:var(--text-muted);margin-top:4px;line-height:1.35}
+.arcade-section{margin-bottom:18px}
+.arcade-section h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin-bottom:8px}
+.arcade-panel{border:1px solid var(--border);border-radius:12px;background:var(--surface);padding:12px 14px}
+.arcade-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border)}
+.arcade-row:last-child{border-bottom:none}
+.arcade-game{height:100%;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.arcade-bar{flex-shrink:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--chrome-bg)}
+.arcade-bar button{padding:6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.arcade-bar button:hover{background:var(--surface2)}
+.arcade-stage{flex:1;min-height:0;overflow:auto;padding:12px;position:relative}
+.arcade-stat{font-size:12px;color:var(--text-muted);font-family:'DM Mono',monospace}
+.arcade-meter{margin:6px 0}
+.arcade-meter label{display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:3px}
+.arcade-meter .track{height:12px;border-radius:6px;background:var(--surface2);overflow:hidden}
+.arcade-meter .fill{height:100%;border-radius:6px;transition:width .2s}
+.arcade-event{
+  border:1px solid var(--border2);border-radius:12px;padding:12px;margin:8px 0;
+  background:var(--surface2);animation:arcadePulse .4s ease;
+}
+@keyframes arcadePulse{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.arcade-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.arcade-actions button{
+  flex:1;min-width:72px;padding:12px 10px;border-radius:10px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text);font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;
+}
+.arcade-actions button:active{transform:scale(0.98)}
+.arcade-actions button.good{border-color:rgba(110,231,183,0.4);color:var(--accent)}
+.arcade-overlay{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.55);z-index:10;padding:16px;
+}
+.arcade-modal{background:var(--chrome-bg);border:1px solid var(--border2);border-radius:14px;padding:20px;max-width:360px;width:100%;text-align:center}
+.arcade-modal h2{margin:0 0 8px;font-size:18px}
+.arcade-modal p{font-size:12px;color:var(--text-muted);line-height:1.45}
+.pr-canvas-wrap{position:relative;width:100%;max-width:560px;margin:0 auto}
+.pr-canvas{width:100%;height:auto;display:block;background:#0b1220;border-radius:12px;border:1px solid var(--border);touch-action:none}
+.tf-tabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px;border-bottom:1px solid var(--border);background:var(--chrome-bg);min-height:44px}
+.tf-tab{
+  padding:8px 12px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none;
+  background:var(--surface);font-size:12px;font-weight:600;cursor:pointer;max-width:140px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:inherit;color:var(--text);
+}
+.tf-tab.active{background:var(--surface2);box-shadow:inset 0 -2px 0 var(--accent)}
+.tf-tab.audio{outline:2px solid var(--danger)}
+.tf-tab.pinned{border-color:var(--accent2)}
+.tf-task{padding:12px;font-size:14px;font-weight:700;background:var(--surface2);border-radius:10px;margin:10px 0}
+.te-term{
+  font-family:'DM Mono',monospace;font-size:13px;background:var(--terminal-bg);color:var(--terminal-fg);
+  border-radius:10px;border:1px solid var(--border);padding:12px;min-height:280px;display:flex;flex-direction:column;
+}
+.te-out{flex:1;overflow:auto;white-space:pre-wrap;line-height:1.45;margin-bottom:8px}
+.te-in{display:flex;gap:6px;align-items:center}
+.te-in input{
+  flex:1;background:var(--terminal-input-bg);border:1px solid var(--terminal-input-border);
+  color:var(--terminal-fg);font-family:inherit;font-size:13px;padding:8px 10px;border-radius:8px;outline:none;
+}
+@media (max-width:600px){
+  .arcade-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .arcade-actions button{min-width:calc(50% - 8px)}
+}
+@media (prefers-reduced-motion:reduce){
+  .arcade-card,.arcade-event{transition:none;animation:none}
+}
+
 </style>
 
 
@@ -5552,6 +5635,7 @@ const storeApps = [
   {key:"homepage",icon:"🌐",name:"Home",desc:"Browser start page"},
   {key:"notes",icon:"📝",name:"Notes",desc:"Persistent text editor with word count"},
   {key:"bouncyball",icon:"🟣",name:"Bouncy Ball",desc:"Satisfying ball physics demo"},
+  {key:"arcade",icon:"🕹️",name:"BrowserOS Arcade",desc:"System Overload, Packet Rush, Tab Frenzy, Terminal Escape"},
   {key:"reactiontime",icon:"⚡",name:"Reaction Time",desc:"Test your reflexes & compete on leaderboard"},
   {key:"aimtrainer",icon:"🎯",name:"Aim Trainer",desc:"Click-accuracy target practice"},
   {key:"profile",icon:"👤",name:"Profile",desc:"Display name & avatar"},
@@ -6239,6 +6323,7 @@ function DesktopWallpaperLayer() {
 
 function GamesApp({ openApp }) {
   const games = [
+    { key: "arcade", icon: "🕹️", name: "Arcade", desc: "4 BrowserOS challenges" },
     { key: "play2048", icon: "🟨", name: "2048", desc: "Merge tiles" },
     { key: "snake", icon: "🐍", name: "Snake", desc: "Classic crawl" },
     { key: "flappybird", icon: "🐤", name: "Flappy Bird", desc: "Tap to fly" },
@@ -6296,6 +6381,7 @@ function HomePage({ openApp }) {
     { key: "notes", icon: "📝", label: "Notes" },
     { key: "projects", icon: "🧩", label: "Projects" },
     { key: "games", icon: "🎮", label: "Games" },
+    { key: "arcade", icon: "🕹️", label: "Arcade" },
     { key: "settings", icon: "⚙️", label: "Settings" },
     { key: "store", icon: "🛍️", label: "Store" },
     { key: "history", icon: "🕒", label: "History" },
@@ -21661,9 +21747,1300 @@ function ProjectsApp({ openApp }) {
 }
 
 /* ─── APPS REGISTRY ─── */
+
+/* ═══════════════════════════════════════════════════════════
+   BROWSEROS ARCADE
+   ═══════════════════════════════════════════════════════════ */
+const ArcadeStore = {
+  key: "browserOS_arcade_v1",
+  defaultState() {
+    return {
+      xp: 0,
+      level: 1,
+      best: { overload: 0, packet: 0, tabs: 0, terminal: 0 },
+      recent: [],
+      achievements: {},
+      daily: null,
+      stats: { gamesPlayed: 0 }
+    };
+  },
+  load() {
+    try {
+      const raw = localStorage.getItem(this.key);
+      if (!raw) return this.defaultState();
+      return Object.assign(this.defaultState(), JSON.parse(raw));
+    } catch (_) {
+      return this.defaultState();
+    }
+  },
+  save(state) {
+    try {
+      localStorage.setItem(this.key, JSON.stringify(state));
+    } catch (_) {}
+  },
+  xpForLevel(lv) {
+    return 500 + (lv - 1) * 400;
+  },
+  addXp(amount) {
+    const s = this.load();
+    s.xp += Math.max(0, amount | 0);
+    while (s.xp >= this.xpForLevel(s.level)) {
+      s.xp -= this.xpForLevel(s.level);
+      s.level += 1;
+    }
+    this.save(s);
+    return s;
+  },
+  recordScore(game, score, meta) {
+    const s = this.load();
+    const sc = Math.max(0, Math.min(5000000, Math.floor(Number(score) || 0)));
+    if (sc > (s.best[game] || 0)) s.best[game] = sc;
+    s.recent.unshift({
+      game,
+      score: sc,
+      at: Date.now(),
+      meta: meta || null
+    });
+    s.recent = s.recent.slice(0, 12);
+    s.stats.gamesPlayed = (s.stats.gamesPlayed || 0) + 1;
+    // XP: soft formula, not a privilege
+    const xpGain = Math.min(250, Math.floor(sc / 80) + 10);
+    s.xp += xpGain;
+    while (s.xp >= this.xpForLevel(s.level)) {
+      s.xp -= this.xpForLevel(s.level);
+      s.level += 1;
+    }
+    this.save(s);
+    try {
+      if (typeof Leaderboards !== "undefined" && Leaderboards.save) {
+        Leaderboards.save("arcade_" + game, {
+          name:
+            (typeof localStorage !== "undefined" && localStorage.getItem("username")) ||
+            "Player",
+          score: sc,
+          date: Date.now()
+        });
+      }
+    } catch (_) {}
+    return { state: s, xpGain };
+  },
+  unlock(id) {
+    const s = this.load();
+    if (s.achievements[id]) return s;
+    s.achievements[id] = Date.now();
+    s.xp += 40;
+    while (s.xp >= this.xpForLevel(s.level)) {
+      s.xp -= this.xpForLevel(s.level);
+      s.level += 1;
+    }
+    this.save(s);
+    return s;
+  },
+  dailyChallenge() {
+    // Deterministic by UTC date string (cosmetic — not security)
+    const day = new Date().toISOString().slice(0, 10);
+    const s = this.load();
+    if (s.daily && s.daily.day === day) return s.daily;
+    const pool = [
+      { game: "overload", desc: "Survive System Overload for 60 seconds", target: 60, kind: "survive_sec" },
+      { game: "packet", desc: "Deliver 25 packets in Packet Rush", target: 25, kind: "deliver" },
+      { game: "tabs", desc: "Complete 12 Tab Frenzy tasks", target: 12, kind: "tasks" },
+      { game: "terminal", desc: "Escape Terminal with under 40 commands", target: 40, kind: "escape_cmds" }
+    ];
+    let h = 0;
+    for (let i = 0; i < day.length; i++) h = (h * 31 + day.charCodeAt(i)) >>> 0;
+    const challenge = Object.assign({ day, progress: 0, done: false }, pool[h % pool.length]);
+    s.daily = challenge;
+    this.save(s);
+    return challenge;
+  },
+  updateDaily(kind, value) {
+    const s = this.load();
+    const d = this.dailyChallenge();
+    if (!d || d.done || d.kind !== kind) return d;
+    d.progress = Math.max(d.progress || 0, value);
+    if (d.progress >= d.target) {
+      d.done = true;
+      s.xp += 120;
+      while (s.xp >= this.xpForLevel(s.level)) {
+        s.xp -= this.xpForLevel(s.level);
+        s.level += 1;
+      }
+    }
+    s.daily = d;
+    this.save(s);
+    return d;
+  }
+};
+
+// Extend local Leaderboards keys for arcade (client-side only)
+if (typeof Leaderboards !== "undefined" && Leaderboards.keys) {
+  Leaderboards.keys.arcade_overload = "browserOS_arcade_overload";
+  Leaderboards.keys.arcade_packet = "browserOS_arcade_packet";
+  Leaderboards.keys.arcade_tabs = "browserOS_arcade_tabs";
+  Leaderboards.keys.arcade_terminal = "browserOS_arcade_terminal";
+  const _save = Leaderboards.save.bind(Leaderboards);
+  Leaderboards.save = function (key, entry) {
+    if (String(key).indexOf("arcade_") === 0) {
+      const scores = this.get(key);
+      scores.push(entry);
+      scores.sort((a, b) => (b.score || 0) - (a.score || 0));
+      try {
+        localStorage.setItem(this.keys[key], JSON.stringify(scores.slice(0, 50)));
+      } catch (_) {}
+      return scores;
+    }
+    return _save(key, entry);
+  };
+}
+
+function arcadeFmtTime(sec) {
+  const s = Math.max(0, Math.floor(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return (m < 10 ? "0" : "") + m + ":" + (r < 10 ? "0" : "") + r;
+}
+
+/* ── System Overload ── */
+const SO_EVENTS = [
+  { id: "mem", title: "Memory leak detected", detail: "Process renderer-worker growing", correct: "KILL" },
+  { id: "cpu", title: "CPU process runaway", detail: "chrome-helper at 99% core", correct: "KILL" },
+  { id: "net", title: "Network connection unstable", detail: "Packet loss on uplink", correct: "RESTART" },
+  { id: "disk", title: "Storage almost full", detail: "Cache partition 97%", correct: "FIX" },
+  { id: "app", title: "Application crashed", detail: "notes.os exited code 1", correct: "RESTART" },
+  { id: "sus", title: "Suspicious process detected", detail: "unknown binary in /tmp", correct: "KILL" },
+  { id: "rend", title: "Browser renderer stopped responding", detail: "Tab freeze reported", correct: "RESTART" },
+  { id: "bg", title: "Background task consuming resources", detail: "sync-daemon elevated", correct: "KILL" },
+  { id: "dns", title: "DNS resolution lagging", detail: "Queries timing out", correct: "FIX" },
+  { id: "noise", title: "Harmless log spam", detail: "Verbose telemetry noise", correct: "IGNORE" }
+];
+
+function SystemOverloadGame({ onBack, onFinish }) {
+  const [running, setRunning] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [stability, setStability] = useState(100);
+  const [cpu, setCpu] = useState(30);
+  const [ram, setRam] = useState(40);
+  const [net, setNet] = useState(20);
+  const [events, setEvents] = useState([]);
+  const [score, setScore] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [bestCombo, setBestCombo] = useState(0);
+  const [handled, setHandled] = useState(0);
+  const [correctN, setCorrectN] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [over, setOver] = useState(null);
+  const tickRef = useRef(null);
+  const spawnRef = useRef(null);
+  const stateRef = useRef({});
+
+  stateRef.current = { stability, cpu, ram, net, events, score, combo, bestCombo, handled, correctN, elapsed, paused, running };
+
+  const cleanup = () => {
+    if (tickRef.current) clearInterval(tickRef.current);
+    if (spawnRef.current) clearInterval(spawnRef.current);
+    tickRef.current = null;
+    spawnRef.current = null;
+  };
+
+  useEffect(() => () => cleanup(), []);
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.hidden) setPaused(true);
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  const endGame = useCallback(() => {
+    cleanup();
+    setRunning(false);
+    const s = stateRef.current;
+    const accuracy = s.handled ? Math.round((s.correctN / s.handled) * 100) : 0;
+    const finalScore = Math.min(
+      500000,
+      Math.floor(s.score + s.elapsed * 8 + s.bestCombo * 25 + accuracy * 5)
+    );
+    const result = {
+      score: finalScore,
+      elapsed: s.elapsed,
+      handled: s.handled,
+      accuracy,
+      bestCombo: s.bestCombo
+    };
+    setOver(result);
+    ArcadeStore.recordScore("overload", finalScore, result);
+    if (s.elapsed >= 60) ArcadeStore.unlock("so_under_pressure");
+    if (s.handled >= 1) ArcadeStore.unlock("so_first");
+    if (s.bestCombo >= 10) ArcadeStore.unlock("so_overclocked");
+    ArcadeStore.updateDaily("survive_sec", s.elapsed);
+    if (onFinish) onFinish(result);
+  }, [onFinish]);
+
+  const start = () => {
+    cleanup();
+    setStability(100);
+    setCpu(28);
+    setRam(35);
+    setNet(22);
+    setEvents([]);
+    setScore(0);
+    setCombo(0);
+    setBestCombo(0);
+    setHandled(0);
+    setCorrectN(0);
+    setElapsed(0);
+    setOver(null);
+    setPaused(false);
+    setRunning(true);
+
+    tickRef.current = setInterval(() => {
+      const st = stateRef.current;
+      if (!st.running || st.paused) return;
+      setElapsed(e => e + 1);
+      setCpu(c => Math.min(99, c + (Math.random() * 3 - 0.5)));
+      setRam(r => Math.min(99, r + (Math.random() * 2.5 - 0.4)));
+      setNet(n => Math.min(99, Math.max(5, n + (Math.random() * 4 - 1.5))));
+      setStability(s => {
+        let next = s - 0.15 - st.events.length * 0.12;
+        if (st.cpu > 85) next -= 0.2;
+        if (st.ram > 90) next -= 0.25;
+        next = Math.max(0, Math.min(100, next));
+        if (next <= 0) {
+          setTimeout(() => endGame(), 0);
+        }
+        return next;
+      });
+    }, 1000);
+
+    const scheduleSpawn = () => {
+      if (spawnRef.current) clearInterval(spawnRef.current);
+      const interval = () => {
+        const st = stateRef.current;
+        if (!st.running || st.paused) return;
+        const pace = Math.max(900, 2800 - st.elapsed * 25);
+        // re-arm with dynamic pace via recursive timeout-like interval adjust
+        const ev = SO_EVENTS[Math.floor(Math.random() * SO_EVENTS.length)];
+        const id = "e" + Date.now() + Math.random();
+        setEvents(prev => {
+          if (prev.length >= 4) return prev;
+          return prev.concat([{ ...ev, uid: id, born: Date.now() }]);
+        });
+      };
+      spawnRef.current = setInterval(interval, Math.max(1000, 2600 - stateRef.current.elapsed * 20));
+      interval();
+    };
+    scheduleSpawn();
+    // refresh spawn rate every 5s
+    const paceIv = setInterval(() => {
+      if (!stateRef.current.running) {
+        clearInterval(paceIv);
+        return;
+      }
+      if (spawnRef.current) clearInterval(spawnRef.current);
+      spawnRef.current = setInterval(() => {
+        const st = stateRef.current;
+        if (!st.running || st.paused) return;
+        const ev = SO_EVENTS[Math.floor(Math.random() * SO_EVENTS.length)];
+        const id = "e" + Date.now() + Math.random();
+        setEvents(prev => (prev.length >= 4 ? prev : prev.concat([{ ...ev, uid: id, born: Date.now() }])));
+      }, Math.max(800, 2600 - stateRef.current.elapsed * 22));
+    }, 5000);
+    // store paceIv on spawnRef cleanup via effect — attach to tick cleanup
+    const _c = cleanup;
+    // monkey: clear pace on unmount via additional ref
+    tickRef.current._pace = paceIv;
+  };
+
+  useEffect(() => {
+    return () => {
+      if (tickRef.current && tickRef.current._pace) clearInterval(tickRef.current._pace);
+    };
+  }, []);
+
+  const act = (uid, action) => {
+    const st = stateRef.current;
+    if (!st.running || st.paused) return;
+    const ev = st.events.find(e => e.uid === uid);
+    if (!ev) return;
+    setEvents(prev => prev.filter(e => e.uid !== uid));
+    setHandled(h => h + 1);
+    const speedBonus = Math.max(0, 8 - Math.floor((Date.now() - ev.born) / 400));
+    if (action === ev.correct) {
+      setCorrectN(c => c + 1);
+      setCombo(c => {
+        const n = c + 1;
+        setBestCombo(b => Math.max(b, n));
+        return n;
+      });
+      setScore(sc => sc + 40 + speedBonus * 5 + stateRef.current.combo * 3);
+      setStability(s => Math.min(100, s + 4));
+      if (ev.correct === "KILL") setCpu(c => Math.max(10, c - 8));
+      if (ev.correct === "FIX") setRam(r => Math.max(15, r - 6));
+      if (ev.correct === "RESTART") setNet(n => Math.max(10, n - 5));
+    } else {
+      setCombo(0);
+      setStability(s => Math.max(0, s - 12));
+      setCpu(c => Math.min(99, c + 6));
+      setScore(sc => Math.max(0, sc - 15));
+    }
+  };
+
+  const meter = (label, val, color) => (
+    <div className="arcade-meter" key={label}>
+      <label>
+        <span>{label}</span>
+        <span>{Math.round(val)}%</span>
+      </label>
+      <div className="track">
+        <div className="fill" style={{ width: Math.round(val) + "%", background: color }} />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="arcade-game">
+      <div className="arcade-bar">
+        <button type="button" onClick={() => { cleanup(); onBack && onBack(); }}>← Arcade</button>
+        <span className="arcade-stat">⏱ {arcadeFmtTime(elapsed)}</span>
+        <span className="arcade-stat">Score {score}</span>
+        <span className="arcade-stat">Combo ×{combo}</span>
+        {!running && !over && (
+          <button type="button" onClick={start}>Start</button>
+        )}
+        {running && (
+          <button type="button" onClick={() => setPaused(p => !p)}>{paused ? "Resume" : "Pause"}</button>
+        )}
+      </div>
+      <div className="arcade-stage">
+        {meter("CPU", cpu, "#f59e0b")}
+        {meter("RAM", ram, "#818cf8")}
+        {meter("NETWORK", net, "#38bdf8")}
+        {meter("STABILITY", stability, stability > 40 ? "#34d399" : "#f87171")}
+        {events.map(ev => (
+          <div className="arcade-event" key={ev.uid}>
+            <div style={{ fontWeight: 800, fontSize: 13 }}>{ev.title}</div>
+            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{ev.detail}</div>
+            <div className="arcade-actions">
+              {["FIX", "RESTART", "KILL", "IGNORE"].map(a => (
+                <button key={a} type="button" onClick={() => act(ev.uid, a)}>{a}</button>
+              ))}
+            </div>
+          </div>
+        ))}
+        {!running && !over && (
+          <p style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 16 }}>
+            Keep SYSTEM STABILITY above 0%. Match the right response to each alert. Speed builds combo.
+          </p>
+        )}
+        {over && (
+          <div className="arcade-overlay">
+            <div className="arcade-modal">
+              <h2>SYSTEM FAILURE</h2>
+              <p>
+                Runtime: {arcadeFmtTime(over.elapsed)}
+                <br />Events handled: {over.handled}
+                <br />Accuracy: {over.accuracy}%
+                <br />Best combo: {over.bestCombo}
+                <br />Score: {over.score.toLocaleString()}
+              </p>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
+                <button type="button" className="notes-btn" onClick={start}>Retry</button>
+                <button type="button" className="notes-btn" onClick={() => onBack && onBack()}>Arcade</button>
+              </div>
+            </div>
+          </div>
+        )}
+        {paused && running && (
+          <div className="arcade-overlay">
+            <div className="arcade-modal">
+              <h2>Paused</h2>
+              <button type="button" className="notes-btn" onClick={() => setPaused(false)}>Resume</button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Packet Rush ── */
+function PacketRushGame({ onBack }) {
+  const canvasRef = useRef(null);
+  const [running, setRunning] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [score, setScore] = useState(0);
+  const [delivered, setDelivered] = useState(0);
+  const [lost, setLost] = useState(0);
+  const [blocked, setBlocked] = useState(0);
+  const [stability, setStability] = useState(100);
+  const [over, setOver] = useState(null);
+  const g = useRef(null);
+  const raf = useRef(null);
+
+  const cleanup = () => {
+    if (raf.current) cancelAnimationFrame(raf.current);
+    raf.current = null;
+  };
+  useEffect(() => () => cleanup(), []);
+
+  const initGraph = () => {
+    const nodes = [
+      { id: 0, x: 0.12, y: 0.5, cap: 3, load: 0, label: "A" },
+      { id: 1, x: 0.35, y: 0.28, cap: 3, load: 0, label: "B" },
+      { id: 2, x: 0.35, y: 0.72, cap: 3, load: 0, label: "C" },
+      { id: 3, x: 0.58, y: 0.5, cap: 4, load: 0, label: "D" },
+      { id: 4, x: 0.82, y: 0.5, cap: 5, load: 0, label: "SRV", server: true }
+    ];
+    const edges = [
+      [0, 1], [0, 2], [1, 3], [2, 3], [3, 4], [1, 2]
+    ].map(([a, b]) => ({ a, b, ok: true, cong: 0 }));
+    return {
+      nodes,
+      edges,
+      packets: [],
+      selected: null,
+      t: 0,
+      spawnAcc: 0,
+      score: 0,
+      delivered: 0,
+      lost: 0,
+      blocked: 0,
+      stability: 100
+    };
+  };
+
+  const loop = () => {
+    const state = g.current;
+    const canvas = canvasRef.current;
+    if (!state || !canvas || state.paused || state.dead) {
+      raf.current = requestAnimationFrame(loop);
+      return;
+    }
+    const ctx = canvas.getContext("2d");
+    const w = canvas.width;
+    const h = canvas.height;
+    state.t += 1;
+    state.spawnAcc += 1;
+    const spawnEvery = Math.max(25, 70 - Math.floor(state.t / 120));
+    if (state.spawnAcc >= spawnEvery) {
+      state.spawnAcc = 0;
+      const types = ["normal", "normal", "priority", "large", "suspicious"];
+      const type = types[Math.floor(Math.random() * types.length)];
+      state.packets.push({
+        id: "p" + state.t + Math.random(),
+        type,
+        node: 0,
+        progress: 0,
+        edge: null,
+        target: type === "suspicious" ? -1 : 4,
+        age: 0
+      });
+    }
+    // random edge issues
+    if (state.t % 180 === 0) {
+      const e = state.edges[Math.floor(Math.random() * state.edges.length)];
+      e.ok = Math.random() > 0.25;
+      e.cong = Math.random() * 0.6;
+    }
+    state.packets.forEach(p => {
+      p.age++;
+      if (p.edge) {
+        const ed = state.edges[p.edge];
+        const speed = (p.type === "priority" ? 0.04 : p.type === "large" ? 0.018 : 0.028) * (1 - (ed.cong || 0) * 0.5);
+        p.progress += speed;
+        if (p.progress >= 1) {
+          const dest = ed.b === p.from ? ed.a : ed.b;
+          p.node = dest;
+          p.edge = null;
+          p.progress = 0;
+          p.from = null;
+          state.nodes[dest].load = Math.max(0, (state.nodes[dest].load || 0) - 1);
+          if (state.nodes[dest].server) {
+            if (p.type === "suspicious") {
+              state.stability -= 8;
+              state.lost++;
+            } else {
+              state.delivered++;
+              state.score += p.type === "priority" ? 80 : p.type === "large" ? 50 : 30;
+            }
+            p.dead = true;
+          } else if ((state.nodes[dest].load || 0) > state.nodes[dest].cap) {
+            state.lost++;
+            state.stability -= 5;
+            p.dead = true;
+          }
+        }
+      } else if (p.type !== "suspicious" && p.age > 400) {
+        state.lost++;
+        state.stability -= 4;
+        p.dead = true;
+      }
+    });
+    state.packets = state.packets.filter(p => !p.dead);
+    state.stability = Math.max(0, Math.min(100, state.stability));
+    if (state.stability <= 0 || state.lost >= 20) {
+      state.dead = true;
+      const finalScore = Math.min(500000, state.score + state.delivered * 15 + state.blocked * 40);
+      setOver({
+        score: finalScore,
+        delivered: state.delivered,
+        lost: state.lost,
+        blocked: state.blocked
+      });
+      setRunning(false);
+      ArcadeStore.recordScore("packet", finalScore, {
+        delivered: state.delivered,
+        lost: state.lost,
+        blocked: state.blocked
+      });
+      if (state.delivered >= 1) ArcadeStore.unlock("pr_first");
+      if (state.blocked >= 5) ArcadeStore.unlock("pr_firewall");
+      if (state.delivered >= 25) ArcadeStore.unlock("pr_storm");
+      ArcadeStore.updateDaily("deliver", state.delivered);
+    }
+    setScore(state.score);
+    setDelivered(state.delivered);
+    setLost(state.lost);
+    setBlocked(state.blocked);
+    setStability(state.stability);
+
+    // draw
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0b1220";
+    ctx.fillRect(0, 0, w, h);
+    state.edges.forEach((e, i) => {
+      const a = state.nodes[e.a];
+      const b = state.nodes[e.b];
+      ctx.beginPath();
+      ctx.moveTo(a.x * w, a.y * h);
+      ctx.lineTo(b.x * w, b.y * h);
+      ctx.strokeStyle = !e.ok ? "#f87171" : e.cong > 0.3 ? "#f59e0b" : "#334155";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    });
+    state.nodes.forEach(n => {
+      const x = n.x * w;
+      const y = n.y * h;
+      ctx.beginPath();
+      ctx.arc(x, y, n.server ? 18 : 14, 0, Math.PI * 2);
+      ctx.fillStyle = n.server ? "#34d399" : state.selected === n.id ? "#818cf8" : "#1e293b";
+      ctx.fill();
+      ctx.strokeStyle = "#94a3b8";
+      ctx.stroke();
+      ctx.fillStyle = "#e2e8f0";
+      ctx.font = "11px sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(n.label, x, y + 4);
+    });
+    state.packets.forEach(p => {
+      let x, y;
+      if (p.edge != null) {
+        const ed = state.edges[p.edge];
+        const a = state.nodes[ed.a];
+        const b = state.nodes[ed.b];
+        const from = p.from === ed.a ? a : b;
+        const to = p.from === ed.a ? b : a;
+        x = (from.x + (to.x - from.x) * p.progress) * w;
+        y = (from.y + (to.y - from.y) * p.progress) * h;
+      } else {
+        x = state.nodes[p.node].x * w;
+        y = state.nodes[p.node].y * h - 20;
+      }
+      const colors = { normal: "#38bdf8", priority: "#fbbf24", large: "#a78bfa", suspicious: "#f87171" };
+      ctx.beginPath();
+      ctx.arc(x, y, p.type === "large" ? 8 : 5, 0, Math.PI * 2);
+      ctx.fillStyle = colors[p.type] || "#fff";
+      ctx.fill();
+    });
+    raf.current = requestAnimationFrame(loop);
+  };
+
+  const start = () => {
+    cleanup();
+    g.current = initGraph();
+    g.current.paused = false;
+    g.current.dead = false;
+    setOver(null);
+    setRunning(true);
+    setPaused(false);
+    setScore(0);
+    setDelivered(0);
+    setLost(0);
+    setBlocked(0);
+    setStability(100);
+    raf.current = requestAnimationFrame(loop);
+  };
+
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const resize = () => {
+      const rect = c.getBoundingClientRect();
+      c.width = Math.floor(rect.width * (window.devicePixelRatio || 1));
+      c.height = Math.floor(320 * (window.devicePixelRatio || 1));
+    };
+    resize();
+    window.addEventListener("resize", resize);
+    return () => window.removeEventListener("resize", resize);
+  }, []);
+
+  const onPointer = e => {
+    const state = g.current;
+    const canvas = canvasRef.current;
+    if (!state || !canvas || state.dead) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width);
+    const y = ((e.clientY - rect.top) / rect.height);
+    let hit = null;
+    state.nodes.forEach(n => {
+      const dx = n.x - x;
+      const dy = n.y - y;
+      if (dx * dx + dy * dy < 0.01) hit = n.id;
+    });
+    if (hit == null) return;
+    // block suspicious at selected node
+    const sus = state.packets.find(p => p.node === hit && p.type === "suspicious" && p.edge == null);
+    if (sus) {
+      sus.dead = true;
+      state.blocked++;
+      state.score += 60;
+      state.packets = state.packets.filter(p => !p.dead);
+      return;
+    }
+    if (state.selected == null) {
+      state.selected = hit;
+      return;
+    }
+    if (state.selected === hit) {
+      state.selected = null;
+      return;
+    }
+    // route packets from selected to hit if edge exists
+    const edgeIdx = state.edges.findIndex(
+      e => (e.a === state.selected && e.b === hit) || (e.b === state.selected && e.a === hit)
+    );
+    if (edgeIdx >= 0 && state.edges[edgeIdx].ok) {
+      state.packets.forEach(p => {
+        if (p.node === state.selected && p.edge == null && p.type !== "suspicious") {
+          p.edge = edgeIdx;
+          p.from = state.selected;
+          p.progress = 0;
+          state.nodes[state.selected].load = (state.nodes[state.selected].load || 0) + 1;
+        }
+      });
+    }
+    state.selected = hit;
+  };
+
+  return (
+    <div className="arcade-game">
+      <div className="arcade-bar">
+        <button type="button" onClick={() => { cleanup(); onBack && onBack(); }}>← Arcade</button>
+        <span className="arcade-stat">Score {score}</span>
+        <span className="arcade-stat">OK {delivered}</span>
+        <span className="arcade-stat">Lost {lost}</span>
+        <span className="arcade-stat">Blocked {blocked}</span>
+        <span className="arcade-stat">Stab {Math.round(stability)}%</span>
+        {!running && <button type="button" onClick={start}>Start</button>}
+        {running && (
+          <button type="button" onClick={() => {
+            setPaused(p => {
+              if (g.current) g.current.paused = !p;
+              return !p;
+            });
+          }}>{paused ? "Resume" : "Pause"}</button>
+        )}
+      </div>
+      <div className="arcade-stage">
+        <p style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+          Tap a node to select, tap a connected node to route. Tap a node holding a red packet to block it.
+        </p>
+        <div className="pr-canvas-wrap">
+          <canvas
+            ref={canvasRef}
+            className="pr-canvas"
+            style={{ height: 320 }}
+            onPointerDown={onPointer}
+          />
+        </div>
+        {over && (
+          <div className="arcade-overlay">
+            <div className="arcade-modal">
+              <h2>Network Down</h2>
+              <p>
+                Delivered: {over.delivered}<br />
+                Lost: {over.lost}<br />
+                Blocked: {over.blocked}<br />
+                Score: {over.score.toLocaleString()}
+              </p>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
+                <button type="button" className="notes-btn" onClick={start}>Retry</button>
+                <button type="button" className="notes-btn" onClick={() => onBack && onBack()}>Arcade</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Tab Frenzy ── */
+const TF_HOSTS = ["home", "github.com", "docs.browseros", "search", "mail", "chat.os", "example.com", "news", "wiki", "music"];
+function tfRandTabs(n) {
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const host = TF_HOSTS[Math.floor(Math.random() * TF_HOSTS.length)];
+    out.push({
+      id: "t" + Date.now() + i + Math.random(),
+      title: host,
+      host,
+      pinned: false,
+      audio: false,
+      born: Date.now() - Math.random() * 60000,
+      suspicious: Math.random() < 0.08
+    });
+  }
+  return out;
+}
+
+function TabFrenzyGame({ onBack }) {
+  const [running, setRunning] = useState(false);
+  const [tabs, setTabs] = useState([]);
+  const [active, setActive] = useState(null);
+  const [task, setTask] = useState(null);
+  const [score, setScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [done, setDone] = useState(0);
+  const [mistakes, setMistakes] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(12);
+  const [over, setOver] = useState(null);
+  const timer = useRef(null);
+  const taskTimer = useRef(null);
+
+  const cleanup = () => {
+    if (timer.current) clearInterval(timer.current);
+    if (taskTimer.current) clearInterval(taskTimer.current);
+  };
+  useEffect(() => () => cleanup(), []);
+
+  const nextTask = (list) => {
+    const t = list || tabs;
+    const types = ["dupes", "audio", "host", "oldest", "suspicious", "pin"];
+    const kind = types[Math.floor(Math.random() * types.length)];
+    if (kind === "dupes") {
+      return { kind, text: "Close all duplicate tabs", check: (tabsAfter, action) => {
+        const counts = {};
+        tabsAfter.forEach(x => { counts[x.host] = (counts[x.host] || 0) + 1; });
+        return Object.values(counts).every(c => c === 1);
+      }};
+    }
+    if (kind === "audio") {
+      const withAudio = t.filter(x => x.audio);
+      if (!withAudio.length) {
+        const id = t[Math.floor(Math.random() * t.length)];
+        if (id) id.audio = true;
+      }
+      return { kind, text: "Close the tab playing audio", needsCloseAudio: true };
+    }
+    if (kind === "host") {
+      const host = t[Math.floor(Math.random() * t.length)].host;
+      return { kind, text: "Close all tabs from " + host, host };
+    }
+    if (kind === "oldest") {
+      return { kind, text: "Close the oldest tab", needsOldest: true };
+    }
+    if (kind === "suspicious") {
+      if (!t.some(x => x.suspicious)) {
+        const id = t[Math.floor(Math.random() * t.length)];
+        if (id) { id.suspicious = true; id.title = "?? " + id.title; }
+      }
+      return { kind, text: "Close the suspicious tab", needsSus: true };
+    }
+    return { kind, text: "Pin the active tab (tap Pin)", needsPin: true };
+  };
+
+  const start = () => {
+    cleanup();
+    let list = tfRandTabs(5);
+    list[0].pinned = true;
+    setTabs(list);
+    setActive(list[0].id);
+    setScore(0);
+    setStreak(0);
+    setDone(0);
+    setMistakes(0);
+    setOver(null);
+    setRunning(true);
+    setTask(nextTask(list));
+    setTimeLeft(14);
+    taskTimer.current = setInterval(() => {
+      setTimeLeft(tl => {
+        if (tl <= 1) {
+          setMistakes(m => m + 1);
+          setStreak(0);
+          setTabs(prev => {
+            const nt = nextTask(prev);
+            setTask(nt);
+            return prev;
+          });
+          return 14;
+        }
+        return tl - 1;
+      });
+    }, 1000);
+  };
+
+  const succeed = () => {
+    setDone(d => d + 1);
+    setStreak(s => s + 1);
+    setScore(sc => sc + 50 + streak * 8 + timeLeft * 2);
+    setTabs(prev => {
+      let list = prev.slice();
+      if (list.length < 14 && Math.random() > 0.4) {
+        list = list.concat(tfRandTabs(1 + Math.floor(Math.random() * 2)));
+      }
+      const nt = nextTask(list);
+      setTask(nt);
+      setTimeLeft(Math.max(8, 14 - Math.floor(done / 3)));
+      return list;
+    });
+    ArcadeStore.updateDaily("tasks", done + 1);
+  };
+
+  const fail = () => {
+    setMistakes(m => m + 1);
+    setStreak(0);
+    if (mistakes + 1 >= 8) {
+      cleanup();
+      setRunning(false);
+      const finalScore = Math.min(500000, score);
+      setOver({ score: finalScore, done, mistakes: mistakes + 1 });
+      ArcadeStore.recordScore("tabs", finalScore, { done, mistakes: mistakes + 1 });
+      if (done >= 1) ArcadeStore.unlock("tf_first");
+      if (done >= 10 && mistakes < 3) ArcadeStore.unlock("tf_clean");
+    }
+  };
+
+  const closeTab = (id) => {
+    if (!running) return;
+    const tab = tabs.find(t => t.id === id);
+    if (!tab) return;
+    if (tab.pinned && task && task.kind !== "dupes") {
+      fail();
+      return;
+    }
+    const next = tabs.filter(t => t.id !== id);
+    setTabs(next);
+    if (active === id) setActive(next[0] ? next[0].id : null);
+
+    let ok = false;
+    if (task.needsCloseAudio && tab.audio) ok = true;
+    if (task.needsSus && tab.suspicious) ok = true;
+    if (task.needsOldest) {
+      const oldest = tabs.reduce((a, b) => (a.born < b.born ? a : b));
+      ok = oldest.id === id;
+    }
+    if (task.host) {
+      ok = next.every(t => t.host !== task.host);
+    }
+    if (task.kind === "dupes") {
+      const counts = {};
+      next.forEach(x => { counts[x.host] = (counts[x.host] || 0) + 1; });
+      ok = Object.values(counts).every(c => c === 1);
+    }
+    if (ok) succeed();
+    else if (task.kind === "dupes" || task.host) {
+      /* partial progress allowed */
+    } else {
+      fail();
+    }
+  };
+
+  const pinActive = () => {
+    if (!task || !task.needsPin || !active) return;
+    setTabs(prev => prev.map(t => t.id === active ? { ...t, pinned: true } : t));
+    succeed();
+  };
+
+  return (
+    <div className="arcade-game">
+      <div className="arcade-bar">
+        <button type="button" onClick={() => { cleanup(); onBack && onBack(); }}>← Arcade</button>
+        <span className="arcade-stat">Score {score}</span>
+        <span className="arcade-stat">Tasks {done}</span>
+        <span className="arcade-stat">⏱ {timeLeft}s</span>
+        <span className="arcade-stat">Streak {streak}</span>
+        {!running && <button type="button" onClick={start}>Start</button>}
+        {running && task && task.needsPin && (
+          <button type="button" onClick={pinActive}>Pin active</button>
+        )}
+      </div>
+      <div className="arcade-stage">
+        {task && <div className="tf-task">{task.text}</div>}
+        <div className="tf-tabs">
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              className={
+                "tf-tab" +
+                (active === t.id ? " active" : "") +
+                (t.audio ? " audio" : "") +
+                (t.pinned ? " pinned" : "")
+              }
+              onClick={() => setActive(t.id)}
+              onDoubleClick={() => closeTab(t.id)}
+            >
+              {t.pinned ? "📌 " : ""}{t.audio ? "🔊 " : ""}{t.title}
+            </button>
+          ))}
+        </div>
+        <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 10 }}>
+          Tap a tab to focus. Double-tap (or use Close) to close. Red outline = audio.
+        </p>
+        {active && (
+          <button type="button" className="notes-btn" style={{ marginTop: 8 }} onClick={() => closeTab(active)}>
+            Close active tab
+          </button>
+        )}
+        {over && (
+          <div className="arcade-overlay">
+            <div className="arcade-modal">
+              <h2>Tab Chaos Contained</h2>
+              <p>
+                Tasks: {over.done}<br />
+                Mistakes: {over.mistakes}<br />
+                Score: {over.score.toLocaleString()}
+              </p>
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 12 }}>
+                <button type="button" className="notes-btn" onClick={start}>Retry</button>
+                <button type="button" className="notes-btn" onClick={() => onBack && onBack()}>Arcade</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Terminal Escape (virtual FS only) ── */
+function TerminalEscapeGame({ onBack }) {
+  const [lines, setLines] = useState([
+    "BrowserOS recovery shell v0.3",
+    "Type 'help' for commands. Find the escape sequence.",
+    ""
+  ]);
+  const [input, setInput] = useState("");
+  const [cwd, setCwd] = useState("/home/player");
+  const [stage, setStage] = useState(0);
+  const [cmds, setCmds] = useState(0);
+  const [hints, setHints] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [t0, setT0] = useState(0);
+  const [escaped, setEscaped] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const inputRef = useRef(null);
+
+  const fs = useRef({
+    "/": { type: "dir" },
+    "/home": { type: "dir" },
+    "/home/player": { type: "dir" },
+    "/home/player/readme.txt": {
+      type: "file",
+      body: "Welcome. Logs may help. Try /logs.\nHint fragment: the key is not under the bed."
+    },
+    "/bin": { type: "dir" },
+    "/logs": { type: "dir" },
+    "/logs/boot.log": {
+      type: "file",
+      body: "boot ok\nwarn: config missing passphrase\nnote: see /config/gate.cfg\nauth_token_hint=BLUE"
+    },
+    "/logs/auth.log": {
+      type: "file",
+      body: "failed login\nhint=SKY\ncombine with boot color word"
+    },
+    "/config": { type: "dir" },
+    "/config/gate.cfg": {
+      type: "file",
+      body: "escape_requires=BLUESKY\nusage: unlock <code>"
+    },
+    "/secret": { type: "dir" },
+    "/secret/vault.txt": {
+      type: "file",
+      body: "locked — unlock first"
+    }
+  });
+
+  const resolve = (path) => {
+    if (!path || path === ".") return cwd;
+    if (path === "..") {
+      if (cwd === "/") return "/";
+      const parts = cwd.split("/").filter(Boolean);
+      parts.pop();
+      return "/" + parts.join("/") || "/";
+    }
+    if (path.startsWith("/")) return path.replace(/\/+$/, "") || "/";
+    const base = cwd === "/" ? "" : cwd;
+    return (base + "/" + path).replace(/\/+/g, "/");
+  };
+
+  const listDir = (path) => {
+    const prefix = path === "/" ? "/" : path + "/";
+    const names = new Set();
+    Object.keys(fs.current).forEach(k => {
+      if (k === path) return;
+      if (path === "/" && k.split("/").filter(Boolean).length === 1) {
+        names.add(k.split("/").filter(Boolean)[0] + (fs.current[k].type === "dir" ? "/" : ""));
+      } else if (k.startsWith(prefix)) {
+        const rest = k.slice(prefix.length);
+        if (!rest) return;
+        const name = rest.split("/")[0];
+        const full = prefix + name;
+        names.add(name + (fs.current[full] && fs.current[full].type === "dir" ? "/" : ""));
+      }
+    });
+    return Array.from(names).sort();
+  };
+
+  const run = (raw) => {
+    if (escaped || failed) return;
+    const line = String(raw || "").trim();
+    if (!line) return;
+    if (!started) {
+      setStarted(true);
+      setT0(Date.now());
+    }
+    setCmds(c => c + 1);
+    setLines(prev => prev.concat(["$ " + line]));
+    const parts = line.split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    const arg = parts[1] || "";
+
+    if (cmd === "help") {
+      setLines(prev => prev.concat([
+        "commands: ls cd pwd cat clear help hint unlock",
+        "(virtual FS only — no real system access)"
+      ]));
+    } else if (cmd === "clear") {
+      setLines([]);
+    } else if (cmd === "pwd") {
+      setLines(prev => prev.concat([cwd]));
+    } else if (cmd === "ls") {
+      const p = resolve(arg || ".");
+      if (!fs.current[p] || fs.current[p].type !== "dir") {
+        setLines(prev => prev.concat(["ls: not a directory"]));
+      } else {
+        const items = listDir(p);
+        setLines(prev => prev.concat([items.join("  ") || "(empty)"]));
+      }
+    } else if (cmd === "cd") {
+      const p = resolve(arg || "/home/player");
+      if (!fs.current[p] || fs.current[p].type !== "dir") {
+        setLines(prev => prev.concat(["cd: no such directory"]));
+      } else {
+        setCwd(p);
+        if (p === "/logs") setStage(s => Math.max(s, 1));
+        if (p === "/config") setStage(s => Math.max(s, 2));
+      }
+    } else if (cmd === "cat") {
+      const p = resolve(arg);
+      if (!fs.current[p] || fs.current[p].type !== "file") {
+        setLines(prev => prev.concat(["cat: no such file"]));
+      } else {
+        setLines(prev => prev.concat([fs.current[p].body]));
+        if (p.indexOf("boot") >= 0 || p.indexOf("auth") >= 0) setStage(s => Math.max(s, 2));
+        if (p.indexOf("gate") >= 0) setStage(s => Math.max(s, 3));
+      }
+    } else if (cmd === "hint") {
+      setHints(h => h + 1);
+      const hintsText = [
+        "Start in /home/player — read readme.txt",
+        "Check /logs for color fragments",
+        "Combine BLUE + SKY → unlock code",
+        "Run: unlock BLUESKY"
+      ];
+      setLines(prev => prev.concat([hintsText[Math.min(hints, hintsText.length - 1)]]));
+    } else if (cmd === "unlock") {
+      const code = String(arg || "").toUpperCase();
+      if (code === "BLUESKY") {
+        setEscaped(true);
+        const elapsed = Math.floor((Date.now() - (t0 || Date.now())) / 1000);
+        const finalScore = Math.min(
+          500000,
+          Math.max(500, 12000 - cmds * 40 - hints * 300 - elapsed * 5)
+        );
+        setLines(prev => prev.concat(["", "*** ACCESS GRANTED — ESCAPED ***", "Score: " + finalScore]));
+        ArcadeStore.recordScore("terminal", finalScore, { cmds, hints, elapsed });
+        ArcadeStore.unlock("te_escape");
+        if (cmds < 40) ArcadeStore.updateDaily("escape_cmds", cmds);
+        ArcadeStore.unlock("te_first");
+      } else {
+        setLines(prev => prev.concat(["unlock: invalid code"]));
+        if (cmds > 80) {
+          setFailed(true);
+          setLines(prev => prev.concat(["Too many attempts. Session locked."]));
+        }
+      }
+    } else {
+      setLines(prev => prev.concat([cmd + ": command not found"]));
+    }
+    setInput("");
+  };
+
+  return (
+    <div className="arcade-game">
+      <div className="arcade-bar">
+        <button type="button" onClick={() => onBack && onBack()}>← Arcade</button>
+        <span className="arcade-stat">cmds {cmds}</span>
+        <span className="arcade-stat">hints {hints}</span>
+        {escaped && <span className="arcade-stat">ESCAPED</span>}
+      </div>
+      <div className="arcade-stage">
+        <div className="te-term">
+          <div className="te-out">{lines.join("\n")}</div>
+          {!escaped && !failed && (
+            <form
+              className="te-in"
+              onSubmit={e => {
+                e.preventDefault();
+                run(input);
+              }}
+            >
+              <span>{cwd}$</span>
+              <input
+                ref={inputRef}
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="command"
+              />
+            </form>
+          )}
+        </div>
+        <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8 }}>
+          Safe virtual filesystem only. No real disk or shell access.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Arcade Home ── */
+function ArcadeApp({ openApp }) {
+  const [view, setView] = useState("home"); // home | overload | packet | tabs | terminal
+  const [state, setState] = useState(() => ArcadeStore.load());
+  const daily = ArcadeStore.dailyChallenge();
+
+  const refresh = () => setState(ArcadeStore.load());
+
+  useEffect(() => {
+    refresh();
+  }, [view]);
+
+  if (view === "overload") {
+    return <SystemOverloadGame onBack={() => { setView("home"); refresh(); }} />;
+  }
+  if (view === "packet") {
+    return <PacketRushGame onBack={() => { setView("home"); refresh(); }} />;
+  }
+  if (view === "tabs") {
+    return <TabFrenzyGame onBack={() => { setView("home"); refresh(); }} />;
+  }
+  if (view === "terminal") {
+    return <TerminalEscapeGame onBack={() => { setView("home"); refresh(); }} />;
+  }
+
+  const need = ArcadeStore.xpForLevel(state.level);
+  const games = [
+    { id: "overload", icon: "🖥️", name: "System Overload", desc: "Fix alerts before stability hits 0", best: state.best.overload },
+    { id: "packet", icon: "📡", name: "Packet Rush", desc: "Route packets, block threats", best: state.best.packet },
+    { id: "tabs", icon: "🗂️", name: "Tab Frenzy", desc: "Manage chaotic browser tabs", best: state.best.tabs },
+    { id: "terminal", icon: "⌨️", name: "Terminal Escape", desc: "Virtual shell puzzles", best: state.best.terminal }
+  ];
+  const achList = Object.keys(state.achievements || {});
+
+  return (
+    <div className="arcade-root internal">
+      <div className="arcade-hero">
+        <div>
+          <div className="arcade-title">BrowserOS Arcade</div>
+          <div className="arcade-sub">Four challenges · local progress · safe sandboxed play</div>
+        </div>
+        <div className="arcade-xp">
+          <div style={{ fontSize: 12, fontWeight: 800 }}>
+            Level {state.level} · {state.xp} / {need} XP
+          </div>
+          <div className="arcade-xp-bar">
+            <div className="arcade-xp-fill" style={{ width: Math.min(100, (state.xp / need) * 100) + "%" }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="arcade-section">
+        <h3>Games</h3>
+        <div className="arcade-grid">
+          {games.map(g => (
+            <button
+              key={g.id}
+              type="button"
+              className="arcade-card"
+              onClick={() => setView(g.id === "overload" ? "overload" : g.id === "packet" ? "packet" : g.id === "tabs" ? "tabs" : "terminal")}
+            >
+              <div className="ai">{g.icon}</div>
+              <div className="an">{g.name}</div>
+              <div className="ad">{g.desc}</div>
+              <div className="ad" style={{ marginTop: 8 }}>Best {Number(g.best || 0).toLocaleString()}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="arcade-section">
+        <h3>Daily challenge</h3>
+        <div className="arcade-panel">
+          <div style={{ fontSize: 13, fontWeight: 700 }}>{daily.desc}</div>
+          <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
+            Progress: {daily.progress || 0} / {daily.target}
+            {daily.done ? " · Complete ✓" : ""}
+          </div>
+        </div>
+      </div>
+
+      <div className="arcade-section">
+        <h3>Recent scores</h3>
+        <div className="arcade-panel">
+          {(state.recent || []).length === 0 && (
+            <div style={{ fontSize: 12, color: "var(--text-muted)" }}>Play a game to record scores.</div>
+          )}
+          {(state.recent || []).slice(0, 6).map((r, i) => (
+            <div className="arcade-row" key={i}>
+              <span>{r.game}</span>
+              <span>{Number(r.score).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="arcade-section">
+        <h3>Achievements ({achList.length})</h3>
+        <div className="arcade-panel" style={{ fontSize: 12 }}>
+          {achList.length === 0 ? "None yet — keep playing." : achList.join(" · ")}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 const apps = {
   homepage:{title:"Home",icon:"🌐",component:({openApp})=><HomePage openApp={openApp}/>},
   games:{title:"Games",icon:"🎮",component:({openApp})=><GamesApp openApp={openApp}/>},
+  arcade:{title:"Arcade",icon:"🕹️",component:(props)=><ArcadeApp {...props}/>},
   bouncyball:{title:"Bouncy Ball",icon:"🟣",component:BouncyBall},
     reactiontime:{
       title:"Reaction Time",
@@ -21959,6 +23336,7 @@ function App() {
         else if (key === "projects") activity = "Coding in Projects.os";
         else if (key === "notes") activity = "Writing in Notes.os";
         else if (key === "terminal") activity = "In Terminal.os";
+        else if (key === "arcade") activity = "Playing Arcade";
         else if (key === "play2048") activity = "Playing 2048";
         else if (key === "profile") activity = "Editing Profile";
         else if (key === "settings") activity = "In Settings";
@@ -23295,11 +24673,11 @@ function App() {
 
    Never put the service_role key in this file.
    ───────────────────────────────────────────── */
-const BROWSEROS_VERSION = "1.3.0-security+";
+const BROWSEROS_VERSION = "1.3.1-arcade";
 const BROWSEROS_CHANNEL = "stable";
 // Change BOTH version and this token on every critical release.
 // Server table browseros_app_config.min_build_token must match (or be empty to allow all).
-const BROWSEROS_BUILD_TOKEN = "bos_build_4dec52fa437a5d62805bac2988868ae3d36c400a";
+const BROWSEROS_BUILD_TOKEN = "bos_build_e10c1da312209bda5c622ee6ff3db5173baba85d";
 
 const BROWSEROS_SUPABASE = {
   url: "https://nthokwsumfutibmjevrz.supabase.co",
