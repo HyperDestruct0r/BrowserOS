@@ -21915,9 +21915,389 @@ const SO_EVENTS = [
   { id: "noise", title: "Harmless log spam", detail: "Verbose telemetry noise", correct: "IGNORE" }
 ];
 
+
+
+const ARCADE_TUTORIALS = {
+  overload: {
+    title: "System Overload",
+    steps: [
+      {
+        heading: "Your mission",
+        body: "You are the operator of a stressed BrowserOS system. Four meters show CPU, RAM, Network, and Stability. If Stability hits 0%, the system fails and the run ends.",
+        visual: "meters"
+      },
+      {
+        heading: "Alerts appear",
+        body: "Problems pop up as alert cards (memory leak, crashed app, suspicious process, and more). Each alert has a short description of what went wrong.",
+        visual: "alert"
+      },
+      {
+        heading: "Choose a response",
+        body: "Every alert has four buttons: FIX, RESTART, KILL, and IGNORE. Only one is correct for that alert. Tap the matching action.",
+        visual: "actions"
+      },
+      {
+        heading: "What each action means",
+        body: "KILL — stop runaway or suspicious processes. RESTART — recover crashed apps or flaky network. FIX — repair disk/DNS/config issues. IGNORE — only for harmless log spam.",
+        visual: "guide"
+      },
+      {
+        heading: "Score & combo",
+        body: "Correct answers raise Stability and score. Fast answers build a combo for bonus points. Wrong answers break the combo and drain Stability. Press Pause anytime; timers stop while paused.",
+        visual: "score"
+      },
+      {
+        heading: "Ready to play",
+        body: "Press Start when the tutorial closes. Keep Stability alive as long as you can — speed and accuracy beat raw survival time alone.",
+        visual: "ready"
+      }
+    ]
+  },
+  packet: {
+    title: "Packet Rush",
+    steps: [
+      {
+        heading: "The network map",
+        body: "You see nodes (A, B, C, D) connected by lines, and a green SRV server on the right. Packets travel from the left toward the server.",
+        visual: "map"
+      },
+      {
+        heading: "Select a node",
+        body: "Tap any node to select it. The selected node highlights. Packets sitting on that node can be sent out along a link.",
+        visual: "select"
+      },
+      {
+        heading: "Route packets",
+        body: "After selecting a node, tap a connected neighbor. Packets on the first node move along that link. Goal: get good packets all the way to SRV.",
+        visual: "route"
+      },
+      {
+        heading: "Packet colors",
+        body: "Blue = normal (standard points). Yellow = priority (more points, faster). Purple = large (slower). Red = suspicious — never send these to the server.",
+        visual: "colors"
+      },
+      {
+        heading: "Block threats",
+        body: "When a red packet sits on a node, tap that node to BLOCK it. Blocking awards bonus points. Routing a red packet to SRV hurts stability.",
+        visual: "block"
+      },
+      {
+        heading: "When the run ends",
+        body: "Stability falls if packets are lost or threats reach the server. The game ends at 0% stability or too many losses. Press Start and keep the network healthy.",
+        visual: "ready"
+      }
+    ]
+  },
+  tabs: {
+    title: "Tab Frenzy",
+    steps: [
+      {
+        heading: "Fake browser tabs",
+        body: "The strip of tabs is only inside the game — not your real browser. Tasks appear at the top. Complete each task before the timer hits zero.",
+        visual: "tabs"
+      },
+      {
+        heading: "Focus a tab",
+        body: "Tap a tab once to focus it (it looks active). Focused tabs are the ones you pin or close with the Close button.",
+        visual: "focus"
+      },
+      {
+        heading: "Close tabs",
+        body: "Use “Close active tab”, or double-tap a tab, to close it. Closing the wrong tab counts as a mistake. Pinned tabs (📌) are protected in most tasks.",
+        visual: "close"
+      },
+      {
+        heading: "Read the task",
+        body: "Examples: close all duplicates · close the audio tab (🔊 / red outline) · close every tab from a host · close the oldest tab · close the suspicious tab · pin the active tab.",
+        visual: "task"
+      },
+      {
+        heading: "Streaks & mistakes",
+        body: "Each completed task adds score and streak. Running out of time or closing the wrong thing adds a mistake. Too many mistakes ends the run.",
+        visual: "score"
+      },
+      {
+        heading: "Ready to play",
+        body: "Press Start after this tutorial. Watch the task text carefully — accuracy matters more than speed at first.",
+        visual: "ready"
+      }
+    ]
+  },
+  terminal: {
+    title: "Terminal Escape",
+    steps: [
+      {
+        heading: "Safe virtual shell",
+        body: "This terminal is fake. Commands never touch your real files or Chromebook. You explore a tiny make-believe filesystem to find an unlock code.",
+        visual: "term"
+      },
+      {
+        heading: "Basic commands",
+        body: "help — list commands. pwd — show current folder. ls — list files here. cd folder — move into a folder (cd .. goes up). clear — wipe the screen.",
+        visual: "cmds"
+      },
+      {
+        heading: "Read files",
+        body: "cat filename shows a file’s text. Example: cat readme.txt inside /home/player. Clues live in files under /logs and /config.",
+        visual: "cat"
+      },
+      {
+        heading: "Follow the trail",
+        body: "A good path: ls → cd logs → cat boot.log → cat auth.log → cd /config → cat gate.cfg. Pieces of the unlock code are hidden in those logs.",
+        visual: "trail"
+      },
+      {
+        heading: "Escape",
+        body: "When you know the code, type: unlock YOURCODE. Hints are available with the hint command but they lower your final score. Fewer commands and less time score higher.",
+        visual: "unlock"
+      },
+      {
+        heading: "Ready to play",
+        body: "Close this tutorial and type help in the prompt to begin. Explore patiently — the code is discoverable without guessing forever.",
+        visual: "ready"
+      }
+    ]
+  }
+};
+
+function ArcadeTutorialVisual({ kind }) {
+  const box = {
+    margin: "12px 0 4px",
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid var(--border2)",
+    background: "var(--surface2)",
+    fontSize: 12,
+    lineHeight: 1.45
+  };
+  if (kind === "meters") {
+    return (
+      <div style={box}>
+        <div style={{ fontWeight: 700, marginBottom: 6 }}>Example meters</div>
+        <div>CPU ████████░░ 72%</div>
+        <div>RAM ██████████░ 88%</div>
+        <div>NETWORK █████░░░░░ 41%</div>
+        <div style={{ color: "var(--accent)" }}>STABILITY ███████░░░ 64%</div>
+      </div>
+    );
+  }
+  if (kind === "alert") {
+    return (
+      <div style={box}>
+        <div style={{ fontWeight: 800 }}>Memory leak detected</div>
+        <div style={{ color: "var(--text-muted)" }}>Process renderer-worker growing</div>
+      </div>
+    );
+  }
+  if (kind === "actions") {
+    return (
+      <div style={{ ...box, display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {["FIX", "RESTART", "KILL", "IGNORE"].map(a => (
+          <span key={a} style={{
+            padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)",
+            fontWeight: 800, background: "var(--surface)"
+          }}>{a}</span>
+        ))}
+      </div>
+    );
+  }
+  if (kind === "guide") {
+    return (
+      <div style={box}>
+        <div>KILL → runaway CPU / suspicious process</div>
+        <div>RESTART → crash / unstable network</div>
+        <div>FIX → disk full / DNS lag</div>
+        <div>IGNORE → harmless log spam only</div>
+      </div>
+    );
+  }
+  if (kind === "map" || kind === "select" || kind === "route") {
+    return (
+      <div style={{ ...box, fontFamily: "DM Mono, monospace", textAlign: "center" }}>
+        <div>B ——— D ——— <span style={{ color: "var(--accent)" }}>SRV</span></div>
+        <div>╱&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</div>
+        <div>A&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;C</div>
+        <div style={{ marginTop: 8, color: "var(--text-muted)" }}>
+          {kind === "select" ? "Tap a node to highlight it" : kind === "route" ? "Tap neighbor to send packets" : "Nodes & links"}
+        </div>
+      </div>
+    );
+  }
+  if (kind === "colors") {
+    return (
+      <div style={box}>
+        <div><span style={{ color: "#38bdf8" }}>●</span> Normal · <span style={{ color: "#fbbf24" }}>●</span> Priority · <span style={{ color: "#a78bfa" }}>●</span> Large · <span style={{ color: "#f87171" }}>●</span> Suspicious</div>
+      </div>
+    );
+  }
+  if (kind === "block") {
+    return (
+      <div style={box}>
+        Red packet on a node → <strong>tap that node</strong> to block (do not route to SRV).
+      </div>
+    );
+  }
+  if (kind === "tabs" || kind === "focus") {
+    return (
+      <div style={{ ...box, display: "flex", flexWrap: "wrap", gap: 4 }}>
+        {["📌 Home", "github.com", "🔊 music", "docs"].map((t, i) => (
+          <span key={t} style={{
+            padding: "6px 10px", borderRadius: "8px 8px 0 0",
+            border: "1px solid var(--border)",
+            background: i === 1 && kind === "focus" ? "var(--surface3)" : "var(--surface)",
+            fontWeight: 600
+          }}>{t}</span>
+        ))}
+      </div>
+    );
+  }
+  if (kind === "close") {
+    return (
+      <div style={box}>
+        Focus a tab → press <strong>Close active tab</strong> (or double-tap the tab).
+      </div>
+    );
+  }
+  if (kind === "task") {
+    return (
+      <div style={{ ...box, fontWeight: 700 }}>
+        Task: Close all tabs from example.com
+      </div>
+    );
+  }
+  if (kind === "term" || kind === "cmds") {
+    return (
+      <div style={{ ...box, fontFamily: "DM Mono, monospace", color: "var(--terminal-fg)", background: "var(--terminal-bg)" }}>
+        <div>$ help</div>
+        <div>commands: ls cd pwd cat clear hint unlock</div>
+        <div>$ pwd</div>
+        <div>/home/player</div>
+      </div>
+    );
+  }
+  if (kind === "cat") {
+    return (
+      <div style={{ ...box, fontFamily: "DM Mono, monospace", color: "var(--terminal-fg)", background: "var(--terminal-bg)" }}>
+        <div>$ cat readme.txt</div>
+        <div>Welcome. Logs may help. Try /logs.</div>
+      </div>
+    );
+  }
+  if (kind === "trail") {
+    return (
+      <div style={{ ...box, fontFamily: "DM Mono, monospace", fontSize: 11 }}>
+        cd /logs → cat boot.log → cat auth.log → cd /config → cat gate.cfg
+      </div>
+    );
+  }
+  if (kind === "unlock") {
+    return (
+      <div style={{ ...box, fontFamily: "DM Mono, monospace", color: "var(--terminal-fg)", background: "var(--terminal-bg)" }}>
+        <div>$ unlock BLUESKY</div>
+        <div>*** ACCESS GRANTED — ESCAPED ***</div>
+      </div>
+    );
+  }
+  if (kind === "score") {
+    return (
+      <div style={box}>
+        Correct / fast play → higher score · mistakes & hints → lower score
+      </div>
+    );
+  }
+  if (kind === "ready") {
+    return (
+      <div style={{ ...box, textAlign: "center", fontWeight: 700, color: "var(--accent)" }}>
+        You are ready — close the tutorial and press Start
+      </div>
+    );
+  }
+  return null;
+}
+
+function ArcadeTutorialModal({ gameKey, onClose }) {
+  const t = ARCADE_TUTORIALS[gameKey];
+  const [step, setStep] = useState(0);
+  if (!t || !t.steps || !t.steps.length) return null;
+  const total = t.steps.length;
+  const cur = t.steps[Math.min(step, total - 1)];
+  const isFirst = step <= 0;
+  const isLast = step >= total - 1;
+
+  return (
+    <div className="arcade-overlay" style={{ zIndex: 20 }} onClick={onClose}>
+      <div
+        className="arcade-modal"
+        style={{ textAlign: "left", maxWidth: 440, width: "100%", maxHeight: "90vh", overflow: "auto" }}
+        onClick={e => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 6 }}>
+          <h2 style={{ margin: 0, fontSize: 16 }}>{t.title}</h2>
+          <span style={{ fontSize: 11, color: "var(--text-muted)", fontWeight: 700, whiteSpace: "nowrap" }}>
+            Step {step + 1} / {total}
+          </span>
+        </div>
+        <div style={{
+          height: 4, borderRadius: 99, background: "var(--surface2)", marginBottom: 14, overflow: "hidden"
+        }}>
+          <div style={{
+            height: "100%", width: ((step + 1) / total) * 100 + "%",
+            background: "linear-gradient(90deg, var(--accent), var(--accent2))", borderRadius: 99,
+            transition: "width .2s ease"
+          }} />
+        </div>
+        <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 8 }}>{cur.heading}</div>
+        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: "var(--text)" }}>{cur.body}</p>
+        <ArcadeTutorialVisual kind={cur.visual} />
+        <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="notes-btn"
+            disabled={isFirst}
+            style={{ opacity: isFirst ? 0.4 : 1, flex: 1, minWidth: 90 }}
+            onClick={() => setStep(s => Math.max(0, s - 1))}
+          >
+            ← Previous
+          </button>
+          {!isLast ? (
+            <button
+              type="button"
+              className="notes-btn"
+              style={{ flex: 1, minWidth: 90, borderColor: "rgba(110,231,183,0.4)", color: "var(--accent)" }}
+              onClick={() => setStep(s => Math.min(total - 1, s + 1))}
+            >
+              Next →
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="notes-btn"
+              style={{ flex: 1, minWidth: 90, borderColor: "rgba(110,231,183,0.4)", color: "var(--accent)" }}
+              onClick={onClose}
+            >
+              Got it — play
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            marginTop: 10, width: "100%", border: "none", background: "transparent",
+            color: "var(--text-muted)", fontSize: 12, cursor: "pointer", fontFamily: "inherit"
+          }}
+        >
+          Skip tutorial
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SystemOverloadGame({ onBack, onFinish }) {
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [showTut, setShowTut] = useState(false);
   const [stability, setStability] = useState(100);
   const [cpu, setCpu] = useState(30);
   const [ram, setRam] = useState(40);
@@ -22106,6 +22486,7 @@ function SystemOverloadGame({ onBack, onFinish }) {
         <span className="arcade-stat">⏱ {arcadeFmtTime(elapsed)}</span>
         <span className="arcade-stat">Score {score}</span>
         <span className="arcade-stat">Combo ×{combo}</span>
+        <button type="button" onClick={() => { setShowTut(true); if (running) setPaused(true); }}>Tutorial</button>
         {!running && !over && (
           <button type="button" onClick={start}>Start</button>
         )}
@@ -22152,13 +22533,16 @@ function SystemOverloadGame({ onBack, onFinish }) {
             </div>
           </div>
         )}
-        {paused && running && (
+        {paused && running && !showTut && (
           <div className="arcade-overlay">
             <div className="arcade-modal">
               <h2>Paused</h2>
               <button type="button" className="notes-btn" onClick={() => setPaused(false)}>Resume</button>
             </div>
           </div>
+        )}
+        {showTut && (
+          <ArcadeTutorialModal gameKey="overload" onClose={() => setShowTut(false)} />
         )}
       </div>
     </div>
@@ -22170,6 +22554,7 @@ function PacketRushGame({ onBack }) {
   const canvasRef = useRef(null);
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [showTut, setShowTut] = useState(false);
   const [score, setScore] = useState(0);
   const [delivered, setDelivered] = useState(0);
   const [lost, setLost] = useState(0);
@@ -22443,6 +22828,10 @@ function PacketRushGame({ onBack }) {
         <span className="arcade-stat">Lost {lost}</span>
         <span className="arcade-stat">Blocked {blocked}</span>
         <span className="arcade-stat">Stab {Math.round(stability)}%</span>
+        <button type="button" onClick={() => {
+          setShowTut(true);
+          if (running && g.current) { g.current.paused = true; setPaused(true); }
+        }}>Tutorial</button>
         {!running && <button type="button" onClick={start}>Start</button>}
         {running && (
           <button type="button" onClick={() => {
@@ -22482,6 +22871,9 @@ function PacketRushGame({ onBack }) {
             </div>
           </div>
         )}
+        {showTut && (
+          <ArcadeTutorialModal gameKey="packet" onClose={() => setShowTut(false)} />
+        )}
       </div>
     </div>
   );
@@ -22508,6 +22900,7 @@ function tfRandTabs(n) {
 
 function TabFrenzyGame({ onBack }) {
   const [running, setRunning] = useState(false);
+  const [showTut, setShowTut] = useState(false);
   const [tabs, setTabs] = useState([]);
   const [active, setActive] = useState(null);
   const [task, setTask] = useState(null);
@@ -22673,6 +23066,7 @@ function TabFrenzyGame({ onBack }) {
         <span className="arcade-stat">Tasks {done}</span>
         <span className="arcade-stat">⏱ {timeLeft}s</span>
         <span className="arcade-stat">Streak {streak}</span>
+        <button type="button" onClick={() => setShowTut(true)}>Tutorial</button>
         {!running && <button type="button" onClick={start}>Start</button>}
         {running && task && task.needsPin && (
           <button type="button" onClick={pinActive}>Pin active</button>
@@ -22722,6 +23116,9 @@ function TabFrenzyGame({ onBack }) {
             </div>
           </div>
         )}
+        {showTut && (
+          <ArcadeTutorialModal gameKey="tabs" onClose={() => setShowTut(false)} />
+        )}
       </div>
     </div>
   );
@@ -22729,6 +23126,7 @@ function TabFrenzyGame({ onBack }) {
 
 /* ── Terminal Escape (virtual FS only) ── */
 function TerminalEscapeGame({ onBack }) {
+  const [showTut, setShowTut] = useState(false);
   const [lines, setLines] = useState([
     "BrowserOS recovery shell v0.3",
     "Type 'help' for commands. Find the escape sequence.",
@@ -22898,6 +23296,7 @@ function TerminalEscapeGame({ onBack }) {
         <span className="arcade-stat">cmds {cmds}</span>
         <span className="arcade-stat">hints {hints}</span>
         {escaped && <span className="arcade-stat">ESCAPED</span>}
+        <button type="button" onClick={() => setShowTut(true)}>Tutorial</button>
       </div>
       <div className="arcade-stage">
         <div className="te-term">
@@ -22925,6 +23324,9 @@ function TerminalEscapeGame({ onBack }) {
         <p style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 8 }}>
           Safe virtual filesystem only. No real disk or shell access.
         </p>
+        {showTut && (
+          <ArcadeTutorialModal gameKey="terminal" onClose={() => setShowTut(false)} />
+        )}
       </div>
     </div>
   );
@@ -22934,6 +23336,7 @@ function TerminalEscapeGame({ onBack }) {
 function ArcadeApp({ openApp }) {
   const [view, setView] = useState("home"); // home | overload | packet | tabs | terminal
   const [state, setState] = useState(() => ArcadeStore.load());
+  const [homeTut, setHomeTut] = useState(null); // game key for tutorial from home
   const daily = ArcadeStore.dailyChallenge();
 
   const refresh = () => setState(ArcadeStore.load());
@@ -22985,17 +23388,29 @@ function ArcadeApp({ openApp }) {
         <h3>Games</h3>
         <div className="arcade-grid">
           {games.map(g => (
-            <button
-              key={g.id}
-              type="button"
-              className="arcade-card"
-              onClick={() => setView(g.id === "overload" ? "overload" : g.id === "packet" ? "packet" : g.id === "tabs" ? "tabs" : "terminal")}
-            >
-              <div className="ai">{g.icon}</div>
-              <div className="an">{g.name}</div>
-              <div className="ad">{g.desc}</div>
-              <div className="ad" style={{ marginTop: 8 }}>Best {Number(g.best || 0).toLocaleString()}</div>
-            </button>
+            <div key={g.id} className="arcade-card" style={{ cursor: "default", paddingBottom: 12 }}>
+              <button
+                type="button"
+                style={{
+                  border: "none", background: "transparent", color: "inherit",
+                  fontFamily: "inherit", width: "100%", cursor: "pointer", padding: 0
+                }}
+                onClick={() => setView(g.id === "overload" ? "overload" : g.id === "packet" ? "packet" : g.id === "tabs" ? "tabs" : "terminal")}
+              >
+                <div className="ai">{g.icon}</div>
+                <div className="an">{g.name}</div>
+                <div className="ad">{g.desc}</div>
+                <div className="ad" style={{ marginTop: 8 }}>Best {Number(g.best || 0).toLocaleString()}</div>
+              </button>
+              <button
+                type="button"
+                className="notes-btn"
+                style={{ marginTop: 10, width: "100%", fontSize: 11, padding: "6px 8px" }}
+                onClick={e => { e.stopPropagation(); setHomeTut(g.id); }}
+              >
+                Tutorial
+              </button>
+            </div>
           ))}
         </div>
       </div>
@@ -23032,6 +23447,9 @@ function ArcadeApp({ openApp }) {
           {achList.length === 0 ? "None yet — keep playing." : achList.join(" · ")}
         </div>
       </div>
+      {homeTut && (
+        <ArcadeTutorialModal gameKey={homeTut} onClose={() => setHomeTut(null)} />
+      )}
     </div>
   );
 }
