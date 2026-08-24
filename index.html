@@ -3075,6 +3075,180 @@ html:not(.banner-motion-on) .profile-card-shell.deco-prism{
   .arcade-card,.arcade-event{transition:none;animation:none}
 }
 
+
+/* Desktop mode: hide browser chrome on OS home — computer desktop feel */
+
+/* Pure OS desktop: no browser chrome, no status chips */
+.shell.desktop-mode .chrome{display:none !important}
+.shell.desktop-mode .os-status-bar{display:none !important}
+.shell.desktop-mode .content{height:100vh;height:100dvh;padding-bottom:0}
+.shell.desktop-mode.has-dock .content{padding-bottom:56px}
+
+.os-desktop{
+  position:relative;width:100%;height:100%;min-height:100%;overflow:hidden;
+  background:
+    radial-gradient(ellipse 70% 55% at 18% 15%, rgba(99,102,241,0.28), transparent 58%),
+    radial-gradient(ellipse 55% 45% at 88% 78%, rgba(16,185,129,0.18), transparent 52%),
+    linear-gradient(165deg, #07101c 0%, #0f172a 42%, #111827 100%);
+}
+.os-desktop-watermark{
+  position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);
+  font-family:'Syne',system-ui,sans-serif;font-size:clamp(48px,10vw,88px);font-weight:800;
+  letter-spacing:-0.04em;color:rgba(226,232,240,0.06);pointer-events:none;user-select:none;z-index:0;
+}
+.os-desktop-icons{
+  position:absolute;z-index:2;top:16px;left:12px;bottom:64px;
+  display:flex;flex-direction:column;flex-wrap:wrap;align-content:flex-start;
+  gap:4px 18px;padding:4px;max-width:calc(100% - 24px);overflow:hidden;pointer-events:none;
+}
+.os-desktop-icon{
+  pointer-events:auto;width:80px;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:10px 6px 8px;border:1px solid transparent;border-radius:8px;
+  background:transparent;color:#fff;cursor:default;font-family:inherit;user-select:none;
+}
+.os-desktop-icon:hover{background:rgba(255,255,255,0.10);border-color:rgba(255,255,255,0.14)}
+.os-desktop-icon:focus{outline:none;background:rgba(59,130,246,0.28);border-color:rgba(147,197,253,0.45)}
+.os-desktop-icon .glyph{
+  width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+  font-size:32px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.45));
+}
+.os-desktop-icon .name{
+  font-size:12px;font-weight:500;text-align:center;line-height:1.2;max-width:76px;
+  text-shadow:0 0 4px rgba(0,0,0,0.95),0 1px 2px rgba(0,0,0,0.9);word-break:break-word;
+}
+.browser-start{
+  min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:40px 20px 60px;box-sizing:border-box;text-align:center;gap:20px;
+  background:var(--bg);color:var(--text);
+}
+.browser-start-logo{
+  font-size:clamp(36px,6vw,52px);font-weight:800;letter-spacing:-0.03em;
+  background:linear-gradient(100deg,#5eead4,#38bdf8,#818cf8);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.browser-start-search{width:min(520px,92vw);display:flex;gap:8px}
+.browser-start-search input{
+  flex:1;height:44px;border-radius:12px;border:1px solid var(--border2);
+  background:var(--surface2);color:var(--text);padding:0 14px;font-size:14px;font-family:inherit;outline:none;
+}
+.browser-start-search button{
+  height:44px;padding:0 18px;border-radius:12px;border:1px solid rgba(110,231,183,0.35);
+  background:rgba(110,231,183,0.12);color:var(--accent);font-weight:700;font-family:inherit;cursor:pointer;
+}
+
+.shell.desktop-mode .chrome{display:none}
+.shell.desktop-mode .content{height:100vh;height:100dvh}
+.shell.desktop-mode.has-dock .content{padding-bottom:64px}
+.shell.has-dock .os-dock{display:flex}
+
+.desktop-home{
+  position:relative;min-height:100%;height:100%;overflow:auto;
+  padding:48px 40px 88px;box-sizing:border-box;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(56,189,248,0.12), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 90% 80%, rgba(99,102,241,0.14), transparent 50%),
+    linear-gradient(165deg, #070b14 0%, #0c1220 45%, #0a101c 100%);
+  color:#e8eef7;
+}
+.desktop-home-inner{max-width:720px}
+.desktop-home-logo{
+  font-size:clamp(40px,6vw,56px);font-weight:800;letter-spacing:-0.03em;line-height:1.05;
+  background:linear-gradient(100deg,#5eead4 0%,#38bdf8 45%,#818cf8 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.desktop-home-kicker{margin-top:8px;font-size:14px;color:rgba(148,163,184,0.9);font-weight:500}
+.desktop-search-row{display:flex;gap:10px;margin-top:28px;max-width:520px}
+.desktop-search-row input{
+  flex:1;height:46px;border-radius:999px;border:1px solid rgba(148,163,184,0.25);
+  background:rgba(15,23,42,0.65);color:#e2e8f0;padding:0 18px;font-size:14px;
+  font-family:inherit;outline:none;backdrop-filter:blur(12px);
+}
+.desktop-search-row input:focus{border-color:rgba(52,211,153,0.5);box-shadow:0 0 0 3px rgba(52,211,153,0.12)}
+.desktop-search-row button{
+  height:46px;padding:0 22px;border-radius:999px;border:none;
+  background:linear-gradient(135deg,#34d399,#2dd4bf);color:#042f2e;
+  font-weight:800;font-family:inherit;font-size:13px;cursor:pointer;letter-spacing:0.04em;
+}
+.desktop-section{margin-top:36px}
+.desktop-section-title{font-size:12px;font-weight:700;color:rgba(148,163,184,0.85);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:14px}
+.desktop-quick{display:flex;flex-wrap:wrap;gap:14px}
+.desktop-quick-btn{
+  width:72px;display:flex;flex-direction:column;align-items:center;gap:8px;
+  background:transparent;border:none;cursor:pointer;font-family:inherit;color:#e2e8f0;padding:0;
+}
+.desktop-quick-icon{
+  width:56px;height:56px;border-radius:16px;
+  background:rgba(30,41,59,0.85);border:1px solid rgba(148,163,184,0.15);
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.25);transition:transform .15s, border-color .15s;
+}
+.desktop-quick-btn:hover .desktop-quick-icon{transform:translateY(-2px);border-color:rgba(52,211,153,0.4)}
+.desktop-quick-label{font-size:11px;font-weight:600;opacity:0.9}
+.desktop-rec{display:flex;flex-wrap:wrap;gap:10px}
+.desktop-rec-btn{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:12px;
+  border:1px solid rgba(148,163,184,0.15);background:rgba(15,23,42,0.55);
+  color:#e2e8f0;font-family:inherit;font-size:12px;cursor:pointer;text-align:left;
+}
+.desktop-rec-btn:hover{border-color:rgba(129,140,248,0.4);background:rgba(30,41,59,0.75)}
+.desktop-rec-btn .ri{font-size:18px}
+.desktop-rec-btn .rt{font-weight:700}
+.desktop-rec-btn .rd{font-size:10px;color:rgba(148,163,184,0.85)}
+.desktop-hint{margin-top:28px;font-size:12px;color:rgba(148,163,184,0.7);line-height:1.5;max-width:420px}
+
+/* Dock taskbar polish */
+.os-dock{
+  height:56px !important;padding:0 10px !important;
+  background:rgba(15,23,42,0.82) !important;
+  border-top:1px solid rgba(148,163,184,0.12) !important;
+  backdrop-filter:blur(24px) saturate(1.2) !important;
+}
+.os-dock-btn{width:42px !important;height:42px !important;border-radius:12px !important;font-size:18px !important}
+.os-dock-clock-btn{
+  display:flex;flex-direction:column;align-items:flex-end;justify-content:center;
+  padding:4px 12px;border-radius:10px;border:none;background:transparent;
+  color:#e2e8f0;font-family:inherit;cursor:pointer;line-height:1.2;min-width:88px;
+}
+.os-dock-clock-btn:hover{background:rgba(255,255,255,0.06)}
+.os-dock-clock-btn .t{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.os-dock-clock-btn .d{font-size:10px;opacity:0.75}
+.tray-float{
+  position:fixed;bottom:68px;right:12px;width:min(280px,92vw);
+  background:rgba(15,23,42,0.95);border:1px solid rgba(148,163,184,0.2);
+  border-radius:14px;padding:14px 16px;z-index:500;
+  box-shadow:0 16px 48px rgba(0,0,0,0.45);backdrop-filter:blur(20px);color:#e2e8f0;
+}
+.tray-float h4{margin:0 0 10px;font-size:13px;font-weight:800}
+.tray-float .row{display:flex;align-items:center;gap:8px;font-size:12px;padding:6px 0;color:rgba(226,232,240,0.9)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:11px;text-align:center}
+.cal-grid .hd{color:rgba(148,163,184,0.8);font-weight:700;padding:4px 0}
+.cal-grid .day{padding:7px 0;border-radius:8px}
+.cal-grid .day.today{background:rgba(52,211,153,0.25);color:#6ee7b7;font-weight:800}
+.cal-grid .day.muted{opacity:0.3}
+
+
+.os-window-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  height:40px;padding:0 10px 0 14px;flex-shrink:0;
+  background:rgba(15,23,42,0.95);border-bottom:1px solid rgba(148,163,184,0.15);
+  color:#e2e8f0;user-select:none;z-index:30;
+}
+.os-window-bar-title{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px}
+.os-window-bar-actions{display:flex;gap:6px}
+.os-window-btn{
+  width:28px;height:28px;border-radius:8px;border:1px solid rgba(148,163,184,0.2);
+  background:rgba(30,41,59,0.85);color:#e2e8f0;font-size:16px;line-height:1;
+  cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;
+}
+.os-window-btn:hover{background:rgba(51,65,85,0.95)}
+.os-window-btn.close:hover{background:rgba(239,68,68,0.4);border-color:rgba(239,68,68,0.55);color:#fecaca}
+.shell.window-app .chrome .tabrow,
+.shell.window-app .chrome .toolbar,
+.shell.window-app .os-status-bar{display:none !important}
+.shell.window-browser .os-status-bar{display:none !important}
+.shell.desktop-mode .os-window-bar{display:none !important}
+
 </style>
 
 
@@ -5704,25 +5878,73 @@ const storeApps = [
 ];
 
 function Store({openApp}){
+  const [installed, setInstalled] = useState(() =>
+    typeof InstalledApps !== "undefined" ? InstalledApps.load() : []
+  );
+  useEffect(() => {
+    const on = () => setInstalled(InstalledApps.load());
+    window.addEventListener("browseros-apps-changed", on);
+    return () => window.removeEventListener("browseros-apps-changed", on);
+  }, []);
+
+  const catalog = [
+    {key:"browser",icon:"🌐",name:"Browser",desc:"Web browser with tabs & address bar", system:true},
+    {key:"terminal",icon:"⌨️",name:"Terminal",desc:"BrowserOS terminal", system:true},
+    {key:"settings",icon:"⚙️",name:"Settings",desc:"System settings", system:true},
+    {key:"chat",icon:"💬",name:"Chat",desc:"BrowserOS chat"},
+    {key:"notes",icon:"📝",name:"Notes",desc:"Notes editor"},
+    {key:"games",icon:"🎮",name:"Games",desc:"Mini-games hub"},
+    {key:"arcade",icon:"🕹️",name:"Arcade",desc:"BrowserOS Arcade"},
+    {key:"sessionsave",icon:"💾",name:"Session Save",desc:"Cloud session backup"},
+    {key:"profile",icon:"👤",name:"Profile",desc:"Your profile"},
+    {key:"history",icon:"🕒",name:"History",desc:"Browser history"},
+    {key:"projects",icon:"🧩",name:"Projects",desc:"Custom .os apps"},
+    {key:"leaderboard",icon:"🏆",name:"Leaderboard",desc:"Reaction rankings"},
+    {key:"play2048",icon:"🟨",name:"2048",desc:"2048 puzzle"},
+    {key:"snake",icon:"🐍",name:"Snake",desc:"Snake game"},
+    {key:"search",icon:"🔎",name:"Search",desc:"DuckDuckGo search page"}
+  ];
+
+  const isOn = k => InstalledApps.isInstalled(k);
+
   return (
-    <div className="store internal">
-      <h2>App Store</h2>
-      <div className="store-sub">All available apps — type <code style={{fontFamily:"'DM Mono',monospace",background:"var(--surface2)",padding:"1px 5px",borderRadius:"4px"}}>appname.os</code> in the address bar</div>
-      <div className="store-list">
-        {storeApps.map(a=>(
-          <div key={a.key} className="store-item" onClick={()=>openApp&&openApp(a.key)}>
-            <div className="s-icon">{a.icon}</div>
-            <div className="s-info">
-              <div className="s-name">{a.name}</div>
-              <div className="s-desc">{a.desc}</div>
-            </div>
-            <div className="s-badge">{a.key}.os</div>
+    <div className="internal" style={{padding:20, overflowY:"auto", height:"100%", boxSizing:"border-box"}}>
+      <h2 style={{margin:"0 0 6px", fontSize:20, fontWeight:800}}>App Store</h2>
+      <p style={{margin:"0 0 16px", fontSize:13, color:"var(--text-muted)"}}>
+        Install optional apps. Browser, Terminal, and Settings are system apps.
+      </p>
+      <div style={{fontSize:12, fontWeight:800, letterSpacing:"0.06em", textTransform:"uppercase", color:"var(--text-muted)", marginBottom:8}}>Installed</div>
+      {catalog.filter(a => isOn(a.key)).map(a => (
+        <div key={a.key} className="store-item" style={{display:"flex", alignItems:"center", gap:12, marginBottom:8}}>
+          <span style={{fontSize:22}}>{a.icon}</span>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontWeight:700}}>{a.name}</div>
+            <div style={{fontSize:12, color:"var(--text-muted)"}}>{a.desc}</div>
           </div>
-        ))}
-      </div>
+          <button type="button" className="notes-btn" onClick={() => openApp && openApp(a.key)}>Open</button>
+          {!a.system && SYSTEM_APPS.indexOf(a.key) < 0 && (
+            <button type="button" className="notes-btn" onClick={() => setInstalled(InstalledApps.uninstall(a.key))}>Uninstall</button>
+          )}
+        </div>
+      ))}
+      <div style={{fontSize:12, fontWeight:800, letterSpacing:"0.06em", textTransform:"uppercase", color:"var(--text-muted)", margin:"18px 0 8px"}}>Available</div>
+      {catalog.filter(a => !isOn(a.key)).map(a => (
+        <div key={a.key} className="store-item" style={{display:"flex", alignItems:"center", gap:12, marginBottom:8}}>
+          <span style={{fontSize:22}}>{a.icon}</span>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontWeight:700}}>{a.name}</div>
+            <div style={{fontSize:12, color:"var(--text-muted)"}}>{a.desc}</div>
+          </div>
+          <button type="button" className="notes-btn" onClick={() => setInstalled(InstalledApps.install(a.key))}>Install</button>
+        </div>
+      ))}
+      {catalog.every(a => isOn(a.key)) && (
+        <div style={{fontSize:13, color:"var(--text-muted)"}}>All listed apps are installed.</div>
+      )}
     </div>
   );
 }
+
 
 function DevTools({ visible, onClose }) {
   const [tab, setTab] = useState("processes");
@@ -5756,9 +5978,75 @@ function DevTools({ visible, onClose }) {
 
 
 /* ─── DOCK PINS + SLEEP SESSION ─── */
-const DOCK_DEFAULT_PINS = ["homepage", "notes", "terminal", "projects", "chat", "settings"];
+const DOCK_DEFAULT_PINS = ["browser", "terminal", "settings", "store"];
 const DOCK_PINS_KEY = "browserOS_dock_pins";
+
 const SLEEP_SESSION_KEY = "browserOS_sleep_session";
+const INSTALLED_APPS_KEY = "browserOS_installed_apps_v1";
+/** System apps always present — cannot uninstall */
+const SYSTEM_APPS = ["homepage", "browser", "terminal", "settings", "store"];
+/** Optional apps installable from Store */
+const OPTIONAL_APPS = [
+  "chat", "notes", "games", "arcade", "sessionsave", "profile",
+  "leaderboard", "play2048", "snake", "flappybird", "bouncyball",
+  "reactiontime", "aimtrainer", "history", "projects", "admin", "search"
+];
+const InstalledApps = {
+  defaults() {
+    return ["homepage", "browser", "terminal", "settings", "store"];
+  },
+  load() {
+    try {
+      const raw = localStorage.getItem(INSTALLED_APPS_KEY);
+      if (!raw) {
+        const d = this.defaults();
+        localStorage.setItem(INSTALLED_APPS_KEY, JSON.stringify(d));
+        return d.slice();
+      }
+      let list = JSON.parse(raw);
+      if (!Array.isArray(list)) list = this.defaults();
+      // Always ensure system apps
+      SYSTEM_APPS.forEach(k => {
+        if (list.indexOf(k) < 0) list.push(k);
+      });
+      return list;
+    } catch (_) {
+      return this.defaults();
+    }
+  },
+  save(list) {
+    try {
+      const next = Array.from(new Set(list || []));
+      SYSTEM_APPS.forEach(k => {
+        if (next.indexOf(k) < 0) next.unshift(k);
+      });
+      localStorage.setItem(INSTALLED_APPS_KEY, JSON.stringify(next));
+      window.dispatchEvent(new CustomEvent("browseros-apps-changed", { detail: next }));
+      return next;
+    } catch (_) {
+      return list || this.defaults();
+    }
+  },
+  isInstalled(key) {
+    const k = String(key || "").toLowerCase().replace(/\.os$/i, "");
+    if (SYSTEM_APPS.indexOf(k) >= 0) return true;
+    return this.load().indexOf(k) >= 0;
+  },
+  install(key) {
+    const k = String(key || "").toLowerCase().replace(/\.os$/i, "");
+    if (!k) return this.load();
+    const list = this.load();
+    if (list.indexOf(k) < 0) list.push(k);
+    return this.save(list);
+  },
+  uninstall(key) {
+    const k = String(key || "").toLowerCase().replace(/\.os$/i, "");
+    if (SYSTEM_APPS.indexOf(k) >= 0) return this.load(); // protected
+    return this.save(this.load().filter(x => x !== k));
+  }
+};
+
+
 
 function loadDockPins() {
   try {
@@ -5804,15 +6092,22 @@ function getSleepSession() {
 
 function saveSleepSession(tabs, cur) {
   try {
-    const slim = (tabs || []).map(t => ({
-      title: t.title,
-      icon: t.icon,
-      type: t.type,
-      data: t.data,
-      sandboxPerms: t.sandboxPerms,
-      history: t.history,
-      historyIndex: t.historyIndex
-    }));
+    const seen = new Set();
+    const slim = [];
+    (tabs || []).forEach(t => {
+      const fp = (t.type || "internal") + "::" + String(t.data || "");
+      if (seen.has(fp)) return;
+      seen.add(fp);
+      slim.push({
+        title: t.title,
+        icon: t.icon,
+        type: t.type,
+        data: t.data,
+        sandboxPerms: t.sandboxPerms,
+        history: t.history,
+        historyIndex: t.historyIndex
+      });
+    });
     localStorage.setItem(
       SLEEP_SESSION_KEY,
       JSON.stringify({ tabs: slim, cur: cur || 0, at: Date.now() })
@@ -5950,7 +6245,11 @@ function OsAppLauncher({ open, onClose, onLaunch, onPin, dockPins }) {
   const [idx, setIdx] = useState(0);
   const [preview, setPreview] = useState(null);
   const inputRef = useRef(null);
-  const apps = getBrowserOSAppCatalog().filter(a => a.key !== "homepage");
+  const apps = getBrowserOSAppCatalog().filter(a => {
+    if (a.key === "homepage") return false;
+    if (typeof InstalledApps !== "undefined" && !InstalledApps.isInstalled(a.key)) return false;
+    return true;
+  });
   const filtered = apps.filter(a => {
     const s = (a.label + " " + a.key).toLowerCase();
     return !q || s.includes(q.toLowerCase());
@@ -6071,11 +6370,47 @@ function OsAppLauncher({ open, onClose, onLaunch, onPin, dockPins }) {
   );
 }
 
+
+function OsMiniCalendar() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  const first = new Date(y, m, 1);
+  const startPad = first.getDay();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const cells = [];
+  for (let i = 0; i < startPad; i++) cells.push({ n: "", muted: true });
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({ n: d, today: d === now.getDate() });
+  }
+  while (cells.length % 7) cells.push({ n: "", muted: true });
+  const heads = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+  return (
+    <div>
+      <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 13 }}>
+        {now.toLocaleDateString([], { month: "long", year: "numeric" })}
+      </div>
+      <div className="cal-grid">
+        {heads.map(h => <div key={h} className="hd">{h}</div>)}
+        {cells.map((c, i) => (
+          <div key={i} className={"day" + (c.today ? " today" : "") + (c.muted ? " muted" : "")}>
+            {c.n}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function OsDock({ openApp, currentAppKey, onOpenLauncher, onHide, pins, onPinsChange }) {
   const [trayOpen, setTrayOpen] = useState(false);
+  const [netOpen, setNetOpen] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
   const [ctx, setCtx] = useState(null); // {x,y,key}
   const [tick, setTick] = useState(0);
-  const dockPins = pins && pins.length ? pins : loadDockPins();
+  const dockPins = (pins && pins.length ? pins : loadDockPins()).filter(k =>
+    k === "homepage" || typeof InstalledApps === "undefined" || InstalledApps.isInstalled(k)
+  );
 
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 4000);
@@ -6211,12 +6546,50 @@ function OsDock({ openApp, currentAppKey, onOpenLauncher, onHide, pins, onPinsCh
         <button
           type="button"
           className="os-dock-btn"
+          title="Network status"
+          onClick={() => { setNetOpen(v => !v); setCalOpen(false); setTrayOpen(false); }}
+        >
+          {online ? "📶" : "📴"}
+        </button>
+        <button
+          type="button"
+          className="os-dock-clock-btn"
+          title="Calendar"
+          onClick={() => { setCalOpen(v => !v); setNetOpen(false); setTrayOpen(false); }}
+        >
+          <span className="t">{new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
+          <span className="d">{new Date().toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })}</span>
+        </button>
+        <button
+          type="button"
+          className="os-dock-btn"
           title="Hide dock (Ctrl+Shift+D)"
           onClick={onHide}
         >
           ▾
         </button>
       </div>
+      {netOpen && (
+        <div className="tray-float" style={{ right: 100 }} onClick={e => e.stopPropagation()}>
+          <h4>Network</h4>
+          <div className="row">
+            <span>{online ? "🟢" : "🟠"}</span>
+            <span>{online ? "Internet: Connected" : "Internet: Offline"}</span>
+          </div>
+          <div className="row" style={{ color: "rgba(148,163,184,0.9)", fontSize: 11, lineHeight: 1.4 }}>
+            BrowserOS can only report online/offline status from the browser.
+            Wi‑Fi network names are not available to web apps.
+          </div>
+          <button type="button" className="notes-btn" style={{ marginTop: 8, width: "100%" }} onClick={() => setNetOpen(false)}>Close</button>
+        </div>
+      )}
+      {calOpen && (
+        <div className="tray-float" onClick={e => e.stopPropagation()}>
+          <h4>{new Date().toLocaleDateString([], { weekday: "long", month: "long", day: "numeric", year: "numeric" })}</h4>
+          <OsMiniCalendar />
+          <button type="button" className="notes-btn" style={{ marginTop: 10, width: "100%" }} onClick={() => setCalOpen(false)}>Close</button>
+        </div>
+      )}
       {ctx && (
         <div
           className="os-dock-ctx"
@@ -6350,109 +6723,94 @@ function GamesApp({ openApp }) {
 }
 
 function HomePage({ openApp }) {
-  const [now, setNow] = useState(() => new Date());
-  const [online, setOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine !== false : true
-  );
-  const [sleepInfo, setSleepInfo] = useState(() =>
-    typeof getSleepSession === "function" ? getSleepSession() : null
-  );
-  const [msg, setMsg] = useState("");
-
+  const [, setTick] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 15000);
-    const on = () => setOnline(true);
-    const off = () => setOnline(false);
-    window.addEventListener("online", on);
-    window.addEventListener("offline", off);
-    return () => {
-      clearInterval(t);
-      window.removeEventListener("online", on);
-      window.removeEventListener("offline", off);
-    };
+    const on = () => setTick(t => t + 1);
+    window.addEventListener("browseros-apps-changed", on);
+    return () => window.removeEventListener("browseros-apps-changed", on);
   }, []);
 
   const launch = key => openApp && openApp(key);
 
-  const desktopApps = [
-    { key: "search", icon: "🌐", label: "Browser" },
+  // Desktop icons: only installed apps (system apps always present on first launch)
+  const icons = [
+    { key: "browser", icon: "🌐", label: "Browser" },
     { key: "terminal", icon: "⌨️", label: "Terminal" },
-    { key: "chat", icon: "💬", label: "Chat" },
-    { key: "notes", icon: "📝", label: "Notes" },
-    { key: "projects", icon: "🧩", label: "Projects" },
-    { key: "games", icon: "🎮", label: "Games" },
-    { key: "arcade", icon: "🕹️", label: "Arcade" },
     { key: "settings", icon: "⚙️", label: "Settings" },
     { key: "store", icon: "🛍️", label: "Store" },
+    { key: "chat", icon: "💬", label: "Chat" },
+    { key: "notes", icon: "📝", label: "Notes" },
+    { key: "games", icon: "🎮", label: "Games" },
+    { key: "arcade", icon: "🕹️", label: "Arcade" },
+    { key: "sessionsave", icon: "💾", label: "Session" },
     { key: "history", icon: "🕒", label: "History" },
-    { key: "sessionsave", icon: "💾", label: "Session" }
-  ];
-
-  const timeStr = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  const dateStr = now.toLocaleDateString([], { month: "numeric", day: "numeric", year: "numeric" });
-
-  const doSleep = () => {
-    window.dispatchEvent(new CustomEvent("browseros-sleep-session"));
-    setTimeout(() => {
-      setSleepInfo(typeof getSleepSession === "function" ? getSleepSession() : null);
-      setMsg("Session slept");
-      setTimeout(() => setMsg(""), 2000);
-    }, 50);
-  };
-  const doResume = () => {
-    window.dispatchEvent(new CustomEvent("browseros-resume-session"));
-    setTimeout(() => {
-      setSleepInfo(typeof getSleepSession === "function" ? getSleepSession() : null);
-      setMsg("Session resumed");
-      setTimeout(() => setMsg(""), 2000);
-    }, 80);
-  };
+    { key: "projects", icon: "🧩", label: "Projects" }
+  ].filter(a => typeof InstalledApps === "undefined" || InstalledApps.isInstalled(a.key));
 
   return (
-    <div className="desktop-surface home internal">
-      <DesktopWallpaperLayer />
-      <div className="desktop-icons">
-        {desktopApps.map(a => (
+    <div className="os-desktop internal">
+      <div className="os-desktop-watermark" aria-hidden="true">BrowserOS</div>
+      <div className="os-desktop-icons">
+        {icons.map(a => (
           <button
             key={a.key}
             type="button"
-            className="desktop-icon"
+            className="os-desktop-icon"
             title={a.label}
+            onDoubleClick={() => launch(a.key)}
             onClick={() => launch(a.key)}
           >
-            <span className="desktop-icon-glyph" aria-hidden="true">{a.icon}</span>
-            <span className="desktop-icon-label">{a.label}</span>
+            <span className="glyph" aria-hidden="true">{a.icon}</span>
+            <span className="name">{a.label}</span>
           </button>
         ))}
-      </div>
-      <div className="desktop-taskbar">
-        <div className="desktop-taskbar-left">
-          <button type="button" className="desktop-tb-btn" title="Store" onClick={() => launch("store")}>⊞</button>
-          <button type="button" className="desktop-tb-btn" title="Browser" onClick={() => launch("search")}>🌐</button>
-          <button type="button" className="desktop-tb-btn" title="Notes" onClick={() => launch("notes")}>📁</button>
-        </div>
-        <div className="desktop-taskbar-center">
-          <button type="button" className="desktop-tb-btn" title="Terminal" onClick={() => launch("terminal")}>⌨️</button>
-          <button type="button" className="desktop-tb-btn" title="Chat" onClick={() => launch("chat")}>💬</button>
-          <button type="button" className="desktop-tb-btn" title="Games" onClick={() => launch("games")}>🎮</button>
-          <button type="button" className="desktop-tb-btn" title="Settings" onClick={() => launch("settings")}>⚙️</button>
-          <button type="button" className="desktop-tb-btn" title="Sleep" onClick={doSleep}>💤</button>
-          <button type="button" className="desktop-tb-btn" title="Resume" onClick={doResume} style={!sleepInfo ? { opacity: 0.4 } : undefined}>▶️</button>
-        </div>
-        <div className="desktop-taskbar-right">
-          <div className="desktop-tb-tray" title={online ? "Online" : "Offline"}>
-            <span>{online ? "📶" : "📴"}</span>
-            {msg ? <span style={{ fontSize: 11 }}>{msg}</span> : null}
-          </div>
-          <div className="desktop-tb-clock">
-            <div>{timeStr}</div>
-            <div style={{ opacity: 0.9 }}>{dateStr}</div>
-          </div>
-        </div>
       </div>
     </div>
   );
 }
+
+/** New-tab / start page inside the Browser app (search lives here, not on the OS desktop) */
+function BrowserStartPage({ openApp }) {
+  const [q, setQ] = useState("");
+  const go = () => {
+    const v = q.trim();
+    if (!v) return;
+    window.dispatchEvent(new CustomEvent("browseros-browser-navigate", { detail: { query: v } }));
+  };
+  return (
+    <div className="browser-start internal">
+      <div className="browser-start-logo">BrowserOS</div>
+      <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Search or enter a URL</div>
+      <form className="browser-start-search" onSubmit={e => { e.preventDefault(); go(); }}>
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          placeholder="Search the web or type a URL"
+          autoFocus
+        />
+        <button type="submit">GO</button>
+      </form>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, justifyContent: "center", maxWidth: 420 }}>
+        {[
+          { label: "YouTube", url: "https://www.youtube.com" },
+          { label: "GitHub", url: "https://github.com" },
+          { label: "Reddit", url: "https://www.reddit.com" },
+          { label: "Gmail", url: "https://mail.google.com" }
+        ].map(l => (
+          <button
+            key={l.url}
+            type="button"
+            className="notes-btn"
+            onClick={() => window.dispatchEvent(new CustomEvent("browseros-browser-navigate", { detail: { query: l.url } }))}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 
 function Terminal({ openSite }) {
   const [input, setInput] = useState("");
@@ -10676,674 +11034,9 @@ async function runOSCode(code){
 
 }
 
-/* ─────────────────────────────────────────────
-   🌐 WINTERPIXEL API SERVICE
-   Starter API layer for BrowserOS
-   File: api.js
-───────────────────────────────────────────── */
 
-/*
-  WHAT THIS DOES:
-  - Authenticates with Winterpixel API
-  - Caches token
-  - Fetches player profiles
-  - Provides reusable API functions
-  - Lets your apps call:
-      API.getPlayer("username")
-      API.getPlayer(uuid)
+/* Winterpixel API + StatsApp removed (obsolete shared-account auth; unused UI) */
 
-  You can later connect this to:
-  - QuickApps
-  - Store
-  - Leaderboards
-  - Friends
-  - Match history
-*/
-
-/* ─────────────────────────────
-   CONFIG
-───────────────────────────── */
-
-const API = (() => {
-
-  const BASE_URL =
-    "https://dev-nakama.winterpixel.io/v2";
-
-  /*
-    IMPORTANT:
-    Move these to a backend later.
-    For now this is fine for learning.
-  */
-
-  const AUTH = {
-    email: "goldencrawler@gmail.com",
-    password: "goldencrawler"
-  };
-
-  /* ─────────────────────────────
-     TOKEN CACHE
-  ───────────────────────────── */
-
-  let token = null;
-
-  let expires = 0;
-
-  /* ─────────────────────────────
-     HELPERS
-  ───────────────────────────── */
-
-  const UUID_RE =
-    /^[a-f0-9-]{36}$/i;
-
-  function now() {
-    return Date.now();
-  }
-
-  /* ─────────────────────────────
-     AUTHENTICATE
-  ───────────────────────────── */
-
-  async function getToken() {
-
-    // reuse token if still valid
-    if (
-      token &&
-      now() < expires
-    ) {
-      return token;
-    }
-
-    const res = await fetch(
-
-      BASE_URL +
-      "/account/authenticate/email?create=false",
-
-      {
-        method: "POST",
-
-        headers: {
-          accept: "application/json",
-
-          authorization:
-            "Basic OTAyaXViZGFmOWgyZTlocXBldzBmYjlhZWIzOTo=",
-
-          "content-type":
-            "application/json"
-        },
-
-        body: JSON.stringify({
-          email: AUTH.email,
-          password: AUTH.password,
-
-          vars: {
-            client_version:
-              "9999999999"
-          }
-        })
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error(
-        "Authentication failed"
-      );
-    }
-
-    const data =
-      await res.json();
-
-    token = data.token;
-
-    // valid for 55 minutes
-    expires =
-      now() + 55 * 60 * 1000;
-
-    return token;
-  }
-
-  /* ─────────────────────────────
-     FETCH PROFILE BY UUID
-  ───────────────────────────── */
-
-  async function fetchProfile(
-    userId
-  ) {
-
-    const t =
-      await getToken();
-
-    const res = await fetch(
-
-      BASE_URL +
-      "/rpc/rpc_get_users_with_profile",
-
-      {
-        method: "POST",
-
-        headers: {
-          accept:
-            "application/json",
-
-          authorization:
-            "Bearer " + t,
-
-          "content-type":
-            "application/json"
-        },
-
-        body: JSON.stringify(
-
-          JSON.stringify({
-            ids: [String(userId)]
-          })
-
-        )
-      }
-    );
-
-    if (!res.ok) {
-      throw new Error(
-        "Failed to fetch profile"
-      );
-    }
-
-    const data =
-      await res.json();
-
-    const inner =
-      JSON.parse(data.payload);
-
-    return inner[0];
-  }
-
-  /* ─────────────────────────────
-     SEARCH USERNAME
-  ───────────────────────────── */
-
-  /*
-    Starter version.
-
-    Later:
-    - connect Firebase
-    - use your own index
-    - add autocomplete
-  */
-
-  async function resolveInput(
-    input
-  ) {
-
-    // already UUID
-    if (UUID_RE.test(input)) {
-      return input;
-    }
-
-    /*
-      TEMPORARY:
-      Replace this later
-      with your username DB.
-    */
-
-    throw new Error(
-      "Username lookup not implemented yet"
-    );
-  }
-
-  /* ─────────────────────────────
-     PUBLIC FUNCTION
-  ───────────────────────────── */
-
-  async function getPlayer(
-    input
-  ) {
-
-    const id =
-      await resolveInput(input);
-
-    const profile =
-      await fetchProfile(id);
-
-    const stats =
-      profile.metadata?.stats || {};
-
-    /*
-      Return CLEAN DATA
-      for apps to use.
-    */
-
-    return {
-
-      id:
-        profile.id,
-
-      name:
-        profile.display_name,
-
-      online:
-        profile.online,
-
-      level:
-        profile.metadata?.progress?.level || 0,
-
-      friendCode:
-        profile.metadata?.friend_code,
-
-      stats,
-    };
-  }
-
-  /* ─────────────────────────────
-     RETURN API
-  ───────────────────────────── */
-
-  return {
-
-    getToken,
-
-    getPlayer,
-
-    fetchProfile
-
-  };
-
-})();
-
-function StatsApp() {
-
-  const { useState } = React;
-
-  const [player, setPlayer] =
-    useState(null);
-
-  const [search, setSearch] =
-    useState("");
-
-  async function load() {
-
-    const input = prompt(
-      "Enter player UUID:"
-    );
-
-    if (!input) return;
-
-    try {
-
-      const data =
-        await API.getPlayer(input);
-
-      console.log(data);
-
-      setPlayer(data);
-
-      // reset search on new load
-      setSearch("");
-
-    } catch (err) {
-
-      console.error(err);
-
-      alert(err.message);
-
-    }
-  }
-
-  function formatKey(key) {
-
-    return key
-
-      .replace(/_/g, " ")
-
-      .replace(/\b\w/g,
-        c => c.toUpperCase()
-      );
-  }
-
-  const filteredStats =
-    player
-
-      ? Object.entries(
-          player.stats
-        ).filter(
-
-          ([key]) =>
-
-            key
-              .toLowerCase()
-
-              .includes(
-                search.toLowerCase()
-              )
-
-        )
-
-      : [];
-
-  return (
-
-    <div
-      style={{
-
-        padding: "12px",
-
-        fontFamily:
-          "monospace",
-
-        height: "100%",
-
-        overflow: "auto",
-
-        background:
-          "#1a1a1a",
-
-        color: "#fff"
-      }}
-    >
-
-      {/* LOAD BUTTON */}
-
-      <button
-
-        onClick={load}
-
-        style={{
-
-          background:
-            "linear-gradient(to bottom, #3a3a3a, #1f1f1f)",
-
-          color: "#fff",
-
-          border:
-            "1px solid #555",
-
-          borderRadius: "8px",
-
-          padding:
-            "10px 16px",
-
-          fontSize: "14px",
-
-          fontWeight: "bold",
-
-          cursor: "pointer",
-
-          boxShadow:
-            "0 2px 6px rgba(0,0,0,0.4)",
-
-          transition:
-            "all 0.15s ease",
-
-          userSelect: "none",
-
-          marginBottom: "12px"
-        }}
-
-        onMouseEnter={(e) => {
-
-          e.target.style.background =
-            "linear-gradient(to bottom, #4a4a4a, #2b2b2b)";
-
-          e.target.style.border =
-            "1px solid #777";
-        }}
-
-        onMouseLeave={(e) => {
-
-          e.target.style.background =
-            "linear-gradient(to bottom, #3a3a3a, #1f1f1f)";
-
-          e.target.style.border =
-            "1px solid #555";
-        }}
-
-        onMouseDown={(e) => {
-
-          e.target.style.transform =
-            "scale(0.97)";
-        }}
-
-        onMouseUp={(e) => {
-
-          e.target.style.transform =
-            "scale(1)";
-        }}
-
-      >
-        Load Stats
-      </button>
-
-      {/* PLAYER DATA */}
-
-      {player && (
-
-        <div>
-
-          {/* SEARCH BAR */}
-
-          <input
-
-            type="text"
-
-            placeholder=
-              "Search stats..."
-
-            value={search}
-
-            onChange={(e) =>
-              setSearch(
-                e.target.value
-              )
-            }
-
-            style={{
-
-              width: "100%",
-
-              padding: "10px",
-
-              marginBottom:
-                "12px",
-
-              borderRadius:
-                "8px",
-
-              border:
-                "1px solid #444",
-
-              background:
-                "#111",
-
-              color: "#0f0",
-
-              outline: "none",
-
-              fontFamily:
-                "monospace",
-
-              boxSizing:
-                "border-box"
-            }}
-
-          />
-
-          {/* STATS PANEL */}
-
-          <div
-            style={{
-
-              background:
-                "#111",
-
-              color: "#0f0",
-
-              padding:
-                "12px",
-
-              borderRadius:
-                "8px",
-
-              border:
-                "1px solid #333",
-
-              maxHeight:
-                "500px",
-
-              overflowY:
-                "auto",
-
-              whiteSpace:
-                "pre-wrap",
-
-              boxShadow:
-                "0 0 10px rgba(0,255,0,0.08)"
-            }}
-          >
-
-            {/* PROFILE INFO */}
-
-            <h2
-              style={{
-                marginTop: 0
-              }}
-            >
-              {player.name}
-            </h2>
-
-            <p>
-              <b>ID:</b>
-              {" "}
-              {player.id}
-            </p>
-
-            <p>
-              <b>Level:</b>
-              {" "}
-              {player.level}
-            </p>
-
-            <p>
-              <b>Online:</b>
-              {" "}
-              {
-                player.online
-                  ? "Yes"
-                  : "No"
-              }
-            </p>
-
-            {
-
-              player.skin && (
-
-                <p>
-
-                  <b>Skin:</b>
-                  {" "}
-                  {player.skin}
-
-                </p>
-
-              )
-
-            }
-
-            {
-
-              player.trail && (
-
-                <p>
-
-                  <b>Trail:</b>
-                  {" "}
-                  {player.trail}
-
-                </p>
-
-              )
-
-            }
-
-            <hr
-              style={{
-                borderColor:
-                  "#333"
-              }}
-            />
-
-            {/* FILTERED STATS */}
-
-            {
-
-              filteredStats.length
-              === 0
-
-                ? (
-
-                  <div
-                    style={{
-                      opacity: 0.7
-                    }}
-                  >
-                    No matching stats.
-                  </div>
-
-                )
-
-                : (
-
-                  filteredStats.map(
-
-                    ([key, value]) => (
-
-                      <div
-                        key={key}
-                        style={{
-                          marginBottom:
-                            "6px"
-                        }}
-                      >
-
-                        <b>
-                          {
-                            formatKey(
-                              key
-                            )
-                          }
-                          :
-                        </b>
-
-                        {" "}
-
-                        {
-
-                          typeof value ===
-                          "number"
-
-                            ? value.toLocaleString()
-
-                            : String(value)
-
-                        }
-
-                      </div>
-
-                    )
-
-                  )
-
-                )
-
-            }
-
-          </div>
-
-        </div>
-
-      )}
-
-    </div>
-  );
-}
-         
 function terminalPrint(text){
 
   const div = document.createElement("div");
@@ -11893,8 +11586,12 @@ function UserProjectRunner({ project }) {
   useEffect(() => {
     setError(null);
     const onMsg = (e) => {
+      // Informational only (project iframe runtime errors). Not a privileged channel.
       if (!e || !e.data || e.data.type !== "bos-project-error") return;
-      setError(e.data.message || "This project threw an error.");
+      // Reject messages from normal https origins (foreign windows)
+      if (typeof e.origin === "string" && /^https?:\/\//i.test(e.origin)) return;
+      if (typeof e.data.message !== "string") return;
+      setError(e.data.message.slice(0, 2000) || "This project threw an error.");
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
@@ -23474,6 +23171,8 @@ const apps = {
       icon: "⌨️",
       component: (props) => <Terminal {...props} />
     },
+    browser:{title:"Browser",icon:"🌐",component:(props)=><BrowserStartPage {...props}/>},
+  browserhome:{title:"New Tab",icon:"🌐",component:(props)=><BrowserStartPage {...props}/>},
     search:{title:"Search",icon:"🔎",component:DdgSearch},
     leaderboard:{
       title:"Leaderboard",
@@ -23740,6 +23439,9 @@ function App() {
   }, []);
 
   const [tabs, setTabs] = useState(DEFAULT_TABS);
+  const [windowMode, setWindowMode] = useState("desktop"); // desktop | browser | app
+  const [appWin, setAppWin] = useState(null);
+
   const [cur, setCur] = useState(0);
   const [input, setInput] = useState("");
 
@@ -24052,25 +23754,80 @@ function App() {
      🌐 OPEN SITE
   ───────────────────────────── */
 
-    const openSite = (url) => {
-      let hostname = url;
-      try { hostname = new URL(url).hostname; } catch (_) {}
+    const resolveBrowserUrl = (raw) => {
+      const v = String(raw || "").trim();
+      if (!v) return null;
+      if (/^https?:\/\//i.test(v)) return v;
+      if (/^[a-z0-9.-]+\.[a-z]{2,}([/:?].*)?$/i.test(v)) return "https://" + v;
+      return "https://duckduckgo.com/?q=" + encodeURIComponent(v);
+    };
 
-      VisitHistory.add(url, hostname);
+    const openSite = (url) => {
+      const resolved = resolveBrowserUrl(url);
+      if (!resolved) return;
+      setWindowMode("browser");
+      setAppWin(null);
+      let hostname = resolved;
+      try { hostname = new URL(resolved).hostname; } catch (_) {}
+
+      VisitHistory.add(resolved, hostname);
 
       const newTab = createTabState({
         title: hostname,
         icon: "🌐",
         type: "web",
-        data: url,
+        data: resolved,
         sandboxPerms: defaultSandboxPerms()
       });
     
       setTabs(prev => {
-        const next = [...prev, newTab];
-        setCur(next.length - 1);
-        return next;
+        // Prefer replacing current browser start tab
+        const next = prev.slice();
+        const i = cur;
+        if (next[i] && next[i].type === "internal" && (next[i].data === "browser" || next[i].data === "browserhome")) {
+          next[i] = withPushedHistory(next[i], {
+            title: hostname,
+            icon: "🌐",
+            type: "web",
+            data: resolved
+          });
+          return next;
+        }
+        const out = [...next, newTab];
+        setCur(out.length - 1);
+        return out;
       });
+      setInput(resolved);
+    };
+
+    // Browser start page / desktop quick links → open in Browser window
+    useEffect(() => {
+      const onNav = (e) => {
+        const q = e && e.detail && (e.detail.query || e.detail.url);
+        if (q) openSite(q);
+      };
+      window.addEventListener("browseros-browser-navigate", onNav);
+      return () => window.removeEventListener("browseros-browser-navigate", onNav);
+    }, [cur]);
+
+    const toggleBookmark = () => {
+      try {
+        const tab = tabs[cur];
+        const url = tab && tab.type === "web" ? tab.data : null;
+        if (!url) return;
+        let title = tab.title || url;
+        try { title = new URL(url).hostname; } catch (_) {}
+        const exists = bookmarks.some(b => b.url === url);
+        if (exists) {
+          const next = bookmarks.filter(b => b.url !== url);
+          setBookmarks(next);
+          if (typeof Bookmarks !== "undefined" && Bookmarks.remove) Bookmarks.remove(url);
+        } else {
+          const next = [...bookmarks, { url, title }];
+          setBookmarks(next);
+          if (typeof Bookmarks !== "undefined" && Bookmarks.add) Bookmarks.add(url, title);
+        }
+      } catch (_) {}
     };
 
   /* ─────────────────────────────
@@ -24243,6 +24000,107 @@ function App() {
         return;
       }
 
+      const k2 = String(key || "").toLowerCase().replace(/\.os$/i, "");
+
+      // Desktop
+      if (k2 === "homepage" || k2 === "home" || k2 === "desktop") {
+        setWindowMode("desktop");
+        setAppWin(null);
+        return;
+      }
+
+      // Browser window
+      if (k2 === "browser" || k2 === "browserhome") {
+        setWindowMode("browser");
+        setAppWin(null);
+        const existing = tabs.findIndex(
+          t => t.type === "web" || (t.type === "internal" && (t.data === "browser" || t.data === "browserhome"))
+        );
+        if (existing !== -1) {
+          setCur(existing);
+          return;
+        }
+        setTabs(prev => {
+          const extra = createTabState({
+            title: "New Tab",
+            icon: "🌐",
+            type: "internal",
+            data: "browser"
+          });
+          setCur(prev.length);
+          return [...prev, extra];
+        });
+        setInput("browser.os");
+        return;
+      }
+
+      // Standalone apps open as their own window (not browser tabs)
+      const STANDALONE_APPS = ["settings","terminal","chat","notes","games","arcade","store","sessionsave","history","projects","admin","wallpaper","profile","search"];
+      if (STANDALONE_APPS.indexOf(k2) >= 0) {
+        if (typeof InstalledApps !== "undefined" && !InstalledApps.isInstalled(k2) && k2 !== "admin") {
+          alert("Install this app from the Store first.");
+          return;
+        }
+        setWindowMode("app");
+        setAppWin(k2);
+        return;
+      }
+
+
+      
+      // Normalize aliases
+      if (key === "search" && arguments.length) {
+        /* search stays available if installed */
+      }
+      if (key === "browser" || key === "browserhome") {
+        // Open Browser app (chrome visible) on the start/search page — not the OS desktop
+        const appKey = "browser";
+        const existing = tabs.findIndex(
+          t => t.type === "internal" && (t.data === "browser" || t.data === "browserhome")
+        );
+        if (existing !== -1) {
+          setCur(existing);
+          return;
+        }
+        const tabCap = typeof maxTabsAllowed === "function" ? maxTabsAllowed() : MAX_TABS;
+        setTabs(prev => {
+          if (prev.length >= tabCap) {
+            const next = prev.slice();
+            const tab = next[cur] || createTabState({ title: "Browser", icon: "🌐", type: "internal", data: "browser" });
+            next[cur] = withPushedHistory(tab, {
+              title: "Browser",
+              icon: "🌐",
+              type: "internal",
+              data: "browser"
+            });
+            return next;
+          }
+          const extra = createTabState({
+            title: "Browser",
+            icon: "🌐",
+            type: "internal",
+            data: "browser"
+          });
+          setCur(prev.length);
+          return [...prev, extra];
+        });
+        setInput("browser.os");
+        return;
+      }
+
+      if (typeof InstalledApps !== "undefined" && !InstalledApps.isInstalled(key) && key !== "homepage" && key !== "admin") {
+        if (typeof browserOSNotify === "function") {
+          browserOSNotify({
+            title: "App not installed",
+            body: "Install it from the Store first."
+          });
+        }
+        // Offer store
+        const storeIdx = tabs.findIndex(t => t.type === "internal" && t.data === "store");
+        if (storeIdx >= 0) setCur(storeIdx);
+        return;
+      }
+
       const builtIn = apps[key];
       const project = !builtIn ? UserProjects.getBySlug(key) : null;
       if (!builtIn && !project) return;
@@ -24277,7 +24135,11 @@ function App() {
   ───────────────────────────── */
 
     const newTab = () => {
+      // New tab only exists inside the Browser window — never returns to desktop
+      setWindowMode("browser");
+      setAppWin(null);
       const tabCap = typeof maxTabsAllowed === "function" ? maxTabsAllowed() : MAX_TABS;
+      const browserCount = tabs.filter(t => t.type === "web" || (t.type === "internal" && (t.data === "browser" || t.data === "browserhome"))).length;
       if (tabs.length >= tabCap) {
         return alert(
           hasProAccess()
@@ -24285,86 +24147,20 @@ function App() {
             : "Free plan: max " + tabCap + " tabs. " + proUpgradeMessage("More tabs")
         );
       }
-    
+      const tab = createTabState({
+        title: "New Tab",
+        icon: "🌐",
+        type: "internal",
+        data: "browser",
+        sandboxPerms: defaultSandboxPerms()
+      });
       setTabs(prev => {
-        const next = [
-          ...prev,
-          createTabState({
-            title: "Home",
-            icon: "🌐",
-            type: "internal",
-            data: "homepage",
-            sandboxPerms: defaultSandboxPerms()
-          })
-        ];
+        const next = [...prev, tab];
         setCur(next.length - 1);
         return next;
       });
-    
-      setTimeout(() => inputRef.current?.focus(), 50);
+      setInput("browser.os");
     };
-    
-    const closeTab = (i, e) => {
-      if (e && e.stopPropagation) e.stopPropagation();
-
-      const closingId = tabs[i]?.id;
-      if (closingId != null && closingId === splitId) setSplitId(null);
-    
-      setTabs(prev => {
-        let next = prev.filter((_, idx) => idx !== i);
-    
-        if (next.length === 0) {
-          next = [
-            createTabState({
-              title: "Home",
-              icon: "🌐",
-              type: "internal",
-              data: "homepage",
-              sandboxPerms: defaultSandboxPerms()
-            })
-          ];
-        }
-        if (next.length < 2) setSplitId(null);
-    
-        return next;
-      });
-    
-      setCur(c => {
-        if (i < c) return c - 1;
-        if (i === c) return Math.max(0, c - 1);
-        return c;
-      });
-    };
-
-  /* ─────────────────────────────
-     ⭐ BOOKMARKS
-  ───────────────────────────── */
-
-  const toggleBookmark = async () => {
-    if (!currentUrl) return;
-
-    const title =
-      currentTab.title || new URL(currentUrl).hostname;
-
-    const list = Bookmarks.get();
-    const exists = list.some(b => b.url === currentUrl);
-
-    if (exists) await Bookmarks.remove(currentUrl);
-    else {
-      const cap = typeof maxBookmarksAllowed === "function" ? maxBookmarksAllowed() : 100;
-      if (!exists && list.length >= cap) {
-        alert(
-          hasProAccess()
-            ? "Bookmark limit reached."
-            : "Free plan: max " + cap + " bookmarks. " + proUpgradeMessage("More bookmarks")
-        );
-        return;
-      }
-      await Bookmarks.add(currentUrl, title);
-    }
-
-    setBookmarks(Bookmarks.get());
-  };
 
   /* ── Split view controls ── */
   const toggleSplit = () => {
@@ -24516,6 +24312,35 @@ function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+
+  useEffect(() => {
+    const toggleFs = () => {
+      try {
+        if (!document.fullscreenElement) {
+          const el = document.documentElement;
+          const req = el.requestFullscreen || el.webkitRequestFullscreen;
+          if (req) req.call(el);
+        } else {
+          const ex = document.exitFullscreen || document.webkitExitFullscreen;
+          if (ex) ex.call(document);
+        }
+      } catch (_) {}
+    };
+    const onKey = (e) => {
+      if (e.key === "F11") {
+        e.preventDefault();
+        toggleFs();
+        return;
+      }
+      if (!(e.ctrlKey || e.metaKey) || !e.shiftKey) return;
+      if ((e.key || "").toLowerCase() !== "f") return;
+      e.preventDefault();
+      toggleFs();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   // Sleep / Resume session from Home
   useEffect(() => {
     const onSleep = () => {
@@ -24536,7 +24361,18 @@ function App() {
         return;
       }
       const tabCap = typeof maxTabsAllowed === "function" ? maxTabsAllowed() : 11;
-      const restored = data.tabs.slice(0, tabCap).map(t =>
+      // Dedupe by type+data(+url) so resume is idempotent and never stacks copies
+      const seen = new Set();
+      const slim = [];
+      (data.tabs || []).forEach(t => {
+        const type = t.type || "internal";
+        const dataKey = String(t.data || "");
+        const fp = type + "::" + dataKey;
+        if (seen.has(fp)) return;
+        seen.add(fp);
+        slim.push(t);
+      });
+      const restored = slim.slice(0, tabCap).map(t =>
         createTabState({
           title: t.title || "Tab",
           icon: t.icon || "🌐",
@@ -24548,7 +24384,8 @@ function App() {
         })
       );
       if (!restored.length) return;
-      setTabs(restored);
+      // REPLACE current tab list — never append (prevents A,B,C + A,B,C)
+      setTabs(() => restored);
       setCur(Math.min(Math.max(0, data.cur || 0), restored.length - 1));
       if (typeof browserOSNotify === "function") {
         browserOSNotify({
@@ -24569,7 +24406,13 @@ function App() {
     tabs[cur] && tabs[cur].type === "internal" ? tabs[cur].data : null;
 
   return (
-    <div className={"shell" + (dockVisible ? " has-dock" : " dock-hidden")}>
+    <div className={
+      "shell" +
+      (dockVisible ? " has-dock" : " dock-hidden") +
+      (windowMode === "desktop" ? " desktop-mode" : "") +
+      (windowMode === "browser" ? " window-browser" : "") +
+      (windowMode === "app" ? " window-app" : "")
+    }>
       <NotificationHost />
       <OsAppLauncher
         open={launcherOpen}
@@ -24617,13 +24460,45 @@ function App() {
         </div>
       )}
 
+      
+      {windowMode !== "desktop" && (
+        <div className="os-window-bar">
+          <div className="os-window-bar-title">
+            {windowMode === "browser"
+              ? "🌐 Browser"
+              : (((apps[appWin] && apps[appWin].icon) || "📦") + " " + ((apps[appWin] && apps[appWin].title) || appWin || "App"))}
+          </div>
+          <div className="os-window-bar-actions">
+            <button type="button" className="os-window-btn" title="Minimize to desktop"
+              onClick={() => setWindowMode("desktop")}>−</button>
+            <button type="button" className="os-window-btn close"
+              title={windowMode === "browser" ? "Close Browser and all its tabs" : "Close app"}
+              onClick={() => {
+                if (windowMode === "browser") {
+                  setTabs(prev => {
+                    const kept = prev.filter(t => t.type === "internal" && t.data === "homepage");
+                    if (kept.length) return kept;
+                    return [createTabState({ title: "Home", icon: "🌐", type: "internal", data: "homepage", sandboxPerms: defaultSandboxPerms() })];
+                  });
+                  setCur(0);
+                  setInput("home.os");
+                }
+                setAppWin(null);
+                setWindowMode("desktop");
+              }}>×</button>
+          </div>
+        </div>
+      )}
+
       <div className="chrome">
 
         {/* TAB ROW */}
         <div className="tabrow">
           <button className="new-tab-btn" onClick={newTab}>+</button>
 
-          {tabs.map((t, i) => (
+          {tabs.map((t, i) => {
+            if (t.type === "internal" && t.data === "homepage") return null;
+            return (
             <div
               key={t.id}
               className={
@@ -24694,7 +24569,8 @@ function App() {
               <span className="tab-title">{t.title}</span>
               <span className="close-btn" onClick={(e) => closeTab(i, e)}>✕</span>
             </div>
-          ))}
+          );
+          })}
         </div>
 
         {/* TOOLBAR */}
@@ -24826,12 +24702,6 @@ function App() {
             </button>
           </div>
 
-          <div className="discord-popup toolbar-desktop-only">
-            💬 Join our{" "}
-            <a href="https://discord.gg/GbVemtmxbY" target="_blank" rel="noreferrer">
-              Discord server
-            </a>
-          </div>
         </div>
 
         {/* Mobile actions sheet */}
@@ -24943,7 +24813,45 @@ function App() {
                 : undefined
             }
           />
-          {(() => {
+          
+          {windowMode === "desktop" && (
+            <div className="page active page-internal" style={{ display: "flex", flexDirection: "column", flex: 1, height: "100%" }}>
+              <HomePage openApp={openApp} />
+            </div>
+          )}
+          {windowMode === "app" && appWin && (
+            <div className="page active page-internal" style={{ display: "flex", flexDirection: "column", flex: 1, height: "100%", overflow: "auto" }}>
+              {(() => {
+                try {
+                  const Comp = apps[appWin] && apps[appWin].component;
+                  if (!Comp) {
+                    return <div style={{ padding: 24, color: "var(--text)" }}>App not found: {String(appWin)}</div>;
+                  }
+                  const profile = (typeof window !== "undefined" && window.__browserOSProfile) || null;
+                  const user = profile || null;
+                  return React.createElement(Comp, {
+                    openApp,
+                    openSite,
+                    user,
+                    profile,
+                    isAdmin: !!(profile && (profile.is_admin || profile.is_dev)),
+                    isDev: !!(profile && profile.is_dev)
+                  });
+                } catch (err) {
+                  return (
+                    <div style={{ padding: 24, color: "var(--text)" }}>
+                      <div style={{ fontWeight: 700, marginBottom: 8 }}>App failed to open</div>
+                      <div style={{ fontSize: 13, opacity: 0.8 }}>{String(err && err.message ? err.message : err)}</div>
+                      <button type="button" className="notes-btn" style={{ marginTop: 12 }} onClick={() => { setAppWin(null); setWindowMode("desktop"); }}>
+                        Back to desktop
+                      </button>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          )}
+          {windowMode === "browser" && (() => {
             const renderPage = (t, i, forceShow) => {
               const sandboxVal = t.type === "web"
                 ? buildSandboxAttr(t.sandboxPerms || defaultSandboxPerms())
@@ -25011,8 +24919,15 @@ function App() {
               );
             }
 
-            return tabs.map((t, i) => renderPage(t, i, false));
+            return tabs
+              .map((t, i) => {
+                // Browser window: never show the OS desktop page as a tab
+                if (t.type === "internal" && t.data === "homepage") return null;
+                return renderPage(t, i, false);
+              })
+              .filter(Boolean);
           })()}
+
         </div>
 
         {/* JS disable warning modal */}
@@ -25091,7 +25006,7 @@ function App() {
 
    Never put the service_role key in this file.
    ───────────────────────────────────────────── */
-const BROWSEROS_VERSION = "1.3.1-arcade";
+const BROWSEROS_VERSION = "2.8.4-desktop";
 const BROWSEROS_CHANNEL = "stable";
 // Change BOTH version and this token on every critical release.
 // Server table browseros_app_config.min_build_token must match (or be empty to allow all).
