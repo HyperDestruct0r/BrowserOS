@@ -26030,28 +26030,49 @@ function AdminApprovalsApp() {
     if (!email) {
       uErr = { message: "Missing user email — cannot change status without server RPC." };
     } else {
+      // Support both the original RPC parameter names and the p_* names used
+      // by some deployed BrowserOS Supabase functions.
       let res = await client.rpc("admin_set_status", {
         target_email: email,
         new_status: status,
         access_expires_at: accessIso
       });
       uErr = res.error;
+
       if (uErr) {
         res = await client.rpc("admin_set_status", {
           target_email: email,
           new_status: status
         });
         uErr = res.error;
-        if (!uErr && accessIso) {
-          const exp = await client.rpc("admin_set_expiry", {
-            target_email: email,
-            access_expires_at: accessIso,
-            nitro_expires_at: null,
-            set_access: true,
-            set_nitro: false
-          });
-          if (exp.error) console.warn("admin_set_expiry:", exp.error.message || exp.error);
-        }
+      }
+
+      if (uErr) {
+        res = await client.rpc("admin_set_status", {
+          p_target_email: email,
+          p_new_status: status,
+          p_access_expires_at: accessIso
+        });
+        uErr = res.error;
+      }
+
+      if (uErr) {
+        res = await client.rpc("admin_set_status", {
+          p_target_email: email,
+          p_new_status: status
+        });
+        uErr = res.error;
+      }
+
+      if (!uErr && accessIso) {
+        const exp = await client.rpc("admin_set_expiry", {
+          target_email: email,
+          access_expires_at: accessIso,
+          nitro_expires_at: null,
+          set_access: true,
+          set_nitro: false
+        });
+        if (exp.error) console.warn("admin_set_expiry:", exp.error.message || exp.error);
       }
     }
     setBusyId(null);
