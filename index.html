@@ -26030,8 +26030,6 @@ function AdminApprovalsApp() {
     if (!email) {
       uErr = { message: "Missing user email — cannot change status without server RPC." };
     } else {
-      // Support both the original RPC parameter names and the p_* names used
-      // by some deployed BrowserOS Supabase functions.
       let res = await client.rpc("admin_set_status", {
         target_email: email,
         new_status: status,
@@ -26062,6 +26060,19 @@ function AdminApprovalsApp() {
           p_new_status: status
         });
         uErr = res.error;
+      }
+
+      // Last-resort fallback: let Supabase RLS decide whether the current
+      // admin session may update this profile. This keeps the write server-
+      // authorized instead of trusting the client-side admin check alone.
+      if (uErr) {
+        const patch = { status };
+        if (status === "approved") patch.access_expires_at = accessIso;
+        const direct = await client
+          .from("profiles")
+          .update(patch)
+          .eq("user_id", userId);
+        uErr = direct.error;
       }
 
       if (!uErr && accessIso) {
